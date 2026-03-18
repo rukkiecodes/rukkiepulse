@@ -151,7 +151,7 @@ func (m ShellModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				password := raw
 				exe := m.exe
 				cmds = append(cmds, func() tea.Msg {
-					out, err := runRukkie(exe, "login", "--password", password)
+					out, err := runRukkieStdin(exe, password, "login")
 					isErr := err != nil
 					return loginDoneMsg{output: out, isErr: isErr}
 				})
@@ -386,6 +386,18 @@ func colorizeInput(raw string) string {
 
 func runRukkie(exe string, args ...string) (string, error) {
 	cmd := exec.Command(exe, args...)
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	err := cmd.Run()
+	return buf.String(), err
+}
+
+// runRukkieStdin pipes stdin to the subprocess — used for login so the
+// password is passed via stdin rather than a flag.
+func runRukkieStdin(exe, stdin string, args ...string) (string, error) {
+	cmd := exec.Command(exe, args...)
+	cmd.Stdin = strings.NewReader(stdin + "\n")
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
