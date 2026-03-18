@@ -42,11 +42,17 @@ jobs:
       - name: Build rukkie.exe
         run: go build -ldflags="-s -w" -o rukkie.exe ./cmd/rukkie/
 
+      - name: Copy binary into installer folder
+        run: copy rukkie.exe installer\rukkie.exe
+
       - name: Build Inno Setup installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
           path: installer/rukkie-setup.iss
           options: /O+
+
+      - name: Verify installer was created
+        run: dir installer\output\
 
       - name: Upload installer to GitHub Release
         uses: softprops/action-gh-release@v2

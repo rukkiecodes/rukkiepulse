@@ -33,7 +33,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 ; The rukkie.exe binary — build it first with: go build -o rukkie.exe ./cmd/rukkie/
-Source: "..\rukkie.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "rukkie.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\RukkiePulse"; Filename: "{app}\{#AppExeName}"
