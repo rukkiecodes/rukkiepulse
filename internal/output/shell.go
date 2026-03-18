@@ -29,14 +29,40 @@ var (
 )
 
 // ── ASCII logo ────────────────────────────────────────────────────────────────
+// RUKKIE rendered in green, PULSE rendered in orange — joined per line.
 
-const logo = `
- ██████╗ ██╗   ██╗██╗  ██╗██╗  ██╗██╗███████╗
+const logoRukkie = ` ██████╗ ██╗   ██╗██╗  ██╗██╗  ██╗██╗███████╗
  ██╔══██╗██║   ██║██║ ██╔╝██║ ██╔╝██║██╔════╝
  ██████╔╝██║   ██║█████╔╝ █████╔╝ ██║█████╗
  ██╔══██╗██║   ██║██╔═██╗ ██╔═██╗ ██║██╔══╝
  ██║  ██║╚██████╔╝██║  ██╗██║  ██╗██║███████╗
  ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝`
+
+const logoPulse = `██████╗ ██╗   ██╗██╗     ███████╗███████╗
+██╔══██╗██║   ██║██║     ██╔════╝██╔════╝
+██████╔╝██║   ██║██║     ███████╗█████╗
+██╔═══╝ ██║   ██║██║     ╚════██║██╔══╝
+██║     ╚██████╔╝███████╗███████║███████╗
+╚═╝      ╚═════╝ ╚══════╝╚══════╝╚══════╝`
+
+// renderLogo returns the logo lines with RUKKIE in green and PULSE in orange.
+func renderLogo() string {
+	rLines := strings.Split(logoRukkie, "\n")
+	pLines := strings.Split(logoPulse, "\n")
+
+	gStyle := lipgloss.NewStyle().Foreground(shellGreen).Background(shellBg).Bold(true)
+	oStyle := lipgloss.NewStyle().Foreground(shellOrange).Background(shellBg).Bold(true)
+
+	var out []string
+	for i, r := range rLines {
+		p := ""
+		if i < len(pLines) {
+			p = oStyle.Render(pLines[i])
+		}
+		out = append(out, gStyle.Render(r)+p)
+	}
+	return strings.Join(out, "\n")
+}
 
 // ── state ────────────────────────────────────────────────────────────────────
 
@@ -255,18 +281,13 @@ func (m ShellModel) View() string {
 		Height(m.height)
 
 	// ── header ──────────────────────────────────────────────────────────────
-	logoStyled := lipgloss.NewStyle().
-		Foreground(shellGreen).
-		Background(shellBg).
-		Bold(true).
-		Render(logo)
+	logoStyled := renderLogo()
 
-	pulse := lipgloss.NewStyle().
-		Foreground(shellOrange).
+	subtitle := lipgloss.NewStyle().
+		Foreground(shellGray).
 		Background(shellBg).
-		Bold(true).
 		MarginLeft(2).
-		Render("pulse  — CLI Observability for Backend Services")
+		Render("CLI Observability for Backend Services")
 
 	divider := lipgloss.NewStyle().
 		Foreground(shellBorder).
@@ -274,7 +295,7 @@ func (m ShellModel) View() string {
 		Width(m.width).
 		Render(strings.Repeat("─", m.width))
 
-	header := bg.Render(logoStyled+"\n"+pulse+"\n") + divider + "\n"
+	header := bg.Render(logoStyled+"\n"+subtitle+"\n") + divider + "\n"
 
 	// ── output viewport ─────────────────────────────────────────────────────
 	vpStyled := lipgloss.NewStyle().
@@ -406,7 +427,7 @@ func runRukkieStdin(exe, stdin string, args ...string) (string, error) {
 }
 
 func logoHeight() int {
-	return strings.Count(logo, "\n") + 3 // logo + pulse line + divider
+	return strings.Count(logoRukkie, "\n") + 3 // logo rows + subtitle + divider
 }
 
 func renderHelp() string {
