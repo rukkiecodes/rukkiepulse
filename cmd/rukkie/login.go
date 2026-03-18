@@ -31,7 +31,7 @@ func init() {
 }
 
 func runLogin(cmd *cobra.Command, args []string) error {
-	fmt.Print("Password: ")
+	output.PrintPasswordPrompt()
 
 	var password string
 	if term.IsTerminal(int(syscall.Stdin)) {
@@ -54,7 +54,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	fmt.Println("\n  ✅ Logged in to RukkiePulse\n")
+	output.PrintLoginSuccess()
 	return nil
 }
 
@@ -63,6 +63,6 @@ func runLogout(cmd *cobra.Command, args []string) error {
 		output.PrintError(err.Error())
 		return nil
 	}
-	fmt.Println("\n  Logged out.\n")
+	output.PrintLogout()
 	return nil
 }

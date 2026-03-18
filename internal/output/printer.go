@@ -2,162 +2,212 @@ package output
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/rukkiecodes/rukkiepulse/internal/engine"
 	"github.com/rukkiecodes/rukkiepulse/internal/probe"
 )
 
-const (
-	colorReset  = "\033[0m"
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-	colorCyan   = "\033[36m"
-	colorGray   = "\033[90m"
-	bold        = "\033[1m"
-)
-
 // PrintScanHeader prints the project + environment header.
 func PrintScanHeader(project, env string) {
-	fmt.Printf("\n%s%s%s  [%s]\n\n", bold, project, colorReset, env)
+	name := sProjectName.Render(project)
+	badge := sEnvBadge.Render(env)
+	fmt.Printf("\n  %s  %s\n\n", name, badge)
 }
 
 // PrintResults prints the scan summary table.
 func PrintResults(results []engine.ServiceResult) {
+	div := sDivider.Render(strings.Repeat("─", 64))
+	fmt.Printf("  %s\n", div)
+
 	for _, r := range results {
 		printServiceRow(r)
 	}
+
+	fmt.Printf("  %s\n", div)
+	printSummary(results)
 	fmt.Println()
 }
 
 func printServiceRow(r engine.ServiceResult) {
-	icon, color := healthDisplay(r)
-	latency := formatLatency(r.Health.Latency)
+	icon := statusIcon(r)
+	latency := sLatency.Render(formatLatency(r.Health.Latency))
+	name := sServiceName.Render(r.Name)
 
-	errMsg := ""
-	if r.Health.Error != "" && r.Health.Status == "down" {
-		errMsg = fmt.Sprintf("  %s(%s)%s", colorRed, r.Health.Error, colorReset)
+	epSummary := endpointSummary(r)
+
+	errPart := ""
+	if r.Health.Error != "" && r.Health.Status != "ok" {
+		errPart = "  " + sDim.Render("← "+truncate(r.Health.Error, 40))
 	}
 
-	endpointSummary := ""
-	if total := len(r.Endpoints); total > 0 {
-		pass, _ := r.PassingEndpoints()
-		epColor := colorGreen
-		if pass < total {
-			epColor = colorYellow
-		}
-		if pass == 0 {
-			epColor = colorRed
-		}
-		endpointSummary = fmt.Sprintf("  %s%d/%d endpoints ok%s", epColor, pass, total, colorReset)
-	}
-
-	fmt.Printf("  %s %-25s %s%-8s%s%s%s\n",
-		icon,
-		r.Name,
-		color, latency, colorReset,
-		endpointSummary,
-		errMsg,
-	)
+	fmt.Printf("  %s  %s  %s  %s%s\n", icon, name, latency, epSummary, errPart)
 }
 
-func healthDisplay(r engine.ServiceResult) (icon, color string) {
-	switch r.Health.Status {
-	case "ok":
-		if r.Health.Latency >= 500*time.Millisecond {
-			return "🟡", colorYellow
-		}
-		return "🟢", colorGreen
-	case "degraded":
-		return "🟡", colorYellow
-	default:
-		return "🔴", colorRed
+func endpointSummary(r engine.ServiceResult) string {
+	total := len(r.Endpoints)
+	if total == 0 {
+		return sGray.Render("—")
 	}
+	pass, _ := r.PassingEndpoints()
+	text := fmt.Sprintf("%d/%d endpoints ok", pass, total)
+	switch {
+	case pass == total:
+		return sEpGood.Render(text)
+	case pass == 0:
+		return sEpFail.Render(text)
+	default:
+		return sEpWarn.Render(text)
+	}
+}
+
+func printSummary(results []engine.ServiceResult) {
+	ok, degraded, down := 0, 0, 0
+	for _, r := range results {
+		switch r.Health.Status {
+		case "ok":
+			ok++
+		case "degraded":
+			degraded++
+		default:
+			down++
+		}
+	}
+
+	parts := []string{}
+	if ok > 0 {
+		parts = append(parts, sSummaryOk.Render(fmt.Sprintf("✓ %d ok", ok)))
+	}
+	if degraded > 0 {
+		parts = append(parts, sSummaryWarn.Render(fmt.Sprintf("⚡ %d degraded", degraded)))
+	}
+	if down > 0 {
+		parts = append(parts, sSummaryDown.Render(fmt.Sprintf("✗ %d down", down)))
+	}
+
+	fmt.Printf("\n  %s\n", strings.Join(parts, sGray.Render("  ·  ")))
 }
 
 // PrintInspect prints the full detail view for one service.
 func PrintInspect(r engine.ServiceResult) {
-	fmt.Printf("\n%sService:%s %s\n", bold, colorReset, r.Name)
-	fmt.Printf("%sURL:%s     %s\n", bold, colorReset, r.URL)
-	fmt.Printf("%sType:%s    %s\n\n", bold, colorReset, r.Type)
+	var b strings.Builder
 
-	icon, color := healthDisplay(r)
-	latency := formatLatency(r.Health.Latency)
-	fmt.Printf("%sHealth:%s  %s %s%s%s  %s\n",
-		bold, colorReset,
-		icon,
-		color, r.Health.Status, colorReset,
-		latency,
-	)
+	b.WriteString(sInspectTitle.Render(r.Name) + "\n")
+	b.WriteString(sLabel.Render("URL") + sWhite.Render(r.URL) + "\n")
+	b.WriteString(sLabel.Render("Type") + sWhite.Render(r.Type) + "\n\n")
+
+	icon := statusIcon(r)
+	b.WriteString(sLabel.Render("Health") + icon + "  " + healthText(r) + "  " + sGray.Render(formatLatency(r.Health.Latency)) + "\n")
 
 	if r.Health.Error != "" {
-		fmt.Printf("         %s%s%s\n", colorRed, r.Health.Error, colorReset)
+		b.WriteString("\n" + sRed.Render(r.Health.Error) + "\n")
 	}
 
 	if len(r.Health.Dependencies) > 0 {
-		fmt.Printf("\n%sDependencies:%s\n", bold, colorReset)
+		b.WriteString("\n" + sBold.Render("Dependencies") + "\n")
 		for dep, status := range r.Health.Dependencies {
-			c := colorGreen
+			c := sGreen
 			if status != "connected" && status != "ok" {
-				c = colorRed
+				c = sRed
 			}
-			fmt.Printf("  %-10s %s%s%s\n", dep+":", c, status, colorReset)
+			b.WriteString(sGray.Render("  "+dep+":") + "  " + c.Render(status) + "\n")
 		}
 	}
 
 	if len(r.Endpoints) > 0 {
-		fmt.Printf("\n%sEndpoints:%s\n", bold, colorReset)
+		b.WriteString("\n" + sBold.Render("Endpoints") + "\n")
+		div := sDivider.Render(strings.Repeat("─", 52))
+		b.WriteString(div + "\n")
 		for _, ep := range r.Endpoints {
-			printEndpointRow(ep)
+			b.WriteString(inspectEndpointRow(ep) + "\n")
 		}
+		b.WriteString(div + "\n")
 	}
 
-	fmt.Println()
+	box := sInspectBox.Render(b.String())
+	fmt.Println(box)
 }
 
-func printEndpointRow(ep probe.EndpointResult) {
+func inspectEndpointRow(ep probe.EndpointResult) string {
 	icon := "🟢"
-	color := colorGreen
+	codeStyle := sGreen
 	if ep.Status == "fail" {
 		icon = "🔴"
-		color = colorRed
+		codeStyle = sRed
 	}
 
+	method := lipgloss.NewStyle().Width(8).Foreground(cBlue).Render(ep.Method)
+	if ep.Kind == "GRAPHQL" {
+		method = lipgloss.NewStyle().Width(8).Foreground(cYellow).Render("GRAPHQL")
+	}
+
+	path := lipgloss.NewStyle().Width(30).Render(ep.Path)
+	latency := lipgloss.NewStyle().Width(8).Foreground(cGray).Render(formatLatency(ep.Latency))
 	code := ""
 	if ep.Code > 0 {
-		code = fmt.Sprintf("%d", ep.Code)
+		code = codeStyle.Render(fmt.Sprintf("%d", ep.Code))
 	}
-
-	errMsg := ""
+	errPart := ""
 	if ep.Error != "" {
-		errMsg = fmt.Sprintf("  %s%s%s", colorRed, ep.Error, colorReset)
+		errPart = "  " + sDim.Render(ep.Error)
 	}
 
-	kind := ep.Kind
-	if kind == "GRAPHQL" {
-		fmt.Printf("  %s  %-8s %-30s %s%-6s%s %s%s\n",
-			icon, "GRAPHQL", ep.Path,
-			color, formatLatency(ep.Latency), colorReset,
-			code, errMsg,
-		)
-	} else {
-		fmt.Printf("  %s  %-7s %-30s %s%-6s%s %s%s\n",
-			icon, ep.Method, ep.Path,
-			color, formatLatency(ep.Latency), colorReset,
-			code, errMsg,
-		)
-	}
+	return fmt.Sprintf("  %s  %s%s%s  %s%s", icon, method, path, latency, code, errPart)
 }
 
 // PrintAllClear prints a message when --errors-only finds nothing wrong.
 func PrintAllClear() {
-	fmt.Printf("  %s✅ All services are healthy%s\n\n", colorGreen, colorReset)
+	fmt.Println(sLoginSuccess.Render("✓  All services are healthy"))
 }
 
 // PrintError prints a top-level error message.
 func PrintError(msg string) {
-	fmt.Printf("\n%s%s error:%s %s\n\n", bold, colorRed, colorReset, msg)
+	fmt.Println(sLoginError.Render("✗  " + msg))
+}
+
+// PrintLoginSuccess prints the login success message.
+func PrintLoginSuccess() {
+	fmt.Println(sLoginSuccess.Render("✓  Logged in to RukkiePulse"))
+}
+
+// PrintLogout prints the logout message.
+func PrintLogout() {
+	fmt.Println(sGray.Render("\n  Logged out.\n"))
+}
+
+// PrintPasswordPrompt prints the styled password prompt.
+func PrintPasswordPrompt() {
+	fmt.Print(sLoginPrompt.Render("  Password: "))
+}
+
+func statusIcon(r engine.ServiceResult) string {
+	switch r.Health.Status {
+	case "ok":
+		if r.Health.Latency >= 500*time.Millisecond {
+			return "🟡"
+		}
+		return "🟢"
+	case "degraded":
+		return "🟡"
+	default:
+		return "🔴"
+	}
+}
+
+func healthText(r engine.ServiceResult) string {
+	switch r.Health.Status {
+	case "ok":
+		if r.Health.Latency >= 500*time.Millisecond {
+			return sYellow.Render("slow")
+		}
+		return sGreen.Render("ok")
+	case "degraded":
+		return sYellow.Render("degraded")
+	default:
+		return sRed.Render("down")
+	}
 }
 
 func formatLatency(d time.Duration) string {
@@ -168,4 +218,11 @@ func formatLatency(d time.Duration) string {
 		return fmt.Sprintf("%dµs", d.Microseconds())
 	}
 	return fmt.Sprintf("%dms", d.Milliseconds())
+}
+
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max-1] + "…"
 }
