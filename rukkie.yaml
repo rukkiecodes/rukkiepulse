@@ -1,16 +1,39 @@
 project: my-backend
 
+observability:
+  jaeger:
+    url: http://localhost:16686
+
 environments:
   dev:
     services:
       - name: auth-service
         url: http://localhost:3000
         type: REST
+        endpoints:
+          - path: /health
+            method: GET
+            expect_status: 200
+          - path: /login
+            method: POST
+            body: '{"email":"test@test.com","password":"test"}'
+            expect_status: 200
 
       - name: payment-service
         url: http://localhost:3001
         type: REST
+        endpoints:
+          - path: /health
+            method: GET
+            expect_status: 200
+          - path: /charge
+            method: POST
+            body: '{"amount":100}'
+            expect_status: 200
 
       - name: graphql-api
-        url: http://localhost:4000
+        url: http://localhost:4000/graphql
         type: GRAPHQL
+        endpoints:
+          - query: '{ __typename }'
+            expect_no_errors: true

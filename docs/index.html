@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RukkiePulse — CLI Observability for Backend Services</title>
+  <meta name="description" content="Monitor services, probe endpoints, trace errors to root cause — all from your terminal." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <span class="topnav-logo">rukkie<span>pulse</span></span>
+  <div class="topnav-links">
+    <a href="#quick-start">Docs</a>
+    <a href="#agents">Agents</a>
+    <a href="https://github.com/rukkiecodes/rukkiepulse" target="_blank">GitHub</a>
+    <a href="https://github.com/rukkiecodes/rukkiepulse/releases/latest" class="btn btn-primary" target="_blank">
+      ↓ Download
+    </a>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Getting Started</div>
+      <a href="#introduction" class="sidebar-link active">Introduction</a>
+      <a href="#quick-start" class="sidebar-link">Quick Start</a>
+      <a href="#configuration" class="sidebar-link">Configuration</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Commands</div>
+      <a href="#cmd-login" class="sidebar-link"><span class="cmd">login</span></a>
+      <a href="#cmd-scan" class="sidebar-link"><span class="cmd">scan</span></a>
+      <a href="#cmd-status" class="sidebar-link"><span class="cmd">status</span></a>
+      <a href="#cmd-inspect" class="sidebar-link"><span class="cmd">inspect</span></a>
+      <a href="#cmd-trace" class="sidebar-link"><span class="cmd">trace</span></a>
+      <a href="#cmd-watch" class="sidebar-link"><span class="cmd">watch</span></a>
+      <a href="#cmd-logout" class="sidebar-link"><span class="cmd">logout</span></a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Agents</div>
+      <a href="#agent-node" class="sidebar-link">Node.js</a>
+      <a href="#agent-python" class="sidebar-link">Python</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Infrastructure</div>
+      <a href="#jaeger" class="sidebar-link">Jaeger Setup</a>
+    </div>
+  </aside>
+
+  <!-- PAGE BODY -->
+  <div style="flex:1; min-width:0;">
+
+    <!-- HERO -->
+    <div class="hero" id="introduction">
+      <div class="hero-badge">📡 CLI-first observability</div>
+      <h1>Know what's broken.<br/><span>Before your users do.</span></h1>
+      <p>RukkiePulse is a terminal-first observability platform. Health checks, endpoint probing, distributed tracing — one command away.</p>
+      <div class="hero-actions">
+        <a href="https://github.com/rukkiecodes/rukkiepulse/releases/latest" class="btn btn-primary" target="_blank">↓ Download for Windows</a>
+        <a href="#quick-start" class="btn btn-outline">Quick Start →</a>
+      </div>
+
+      <div class="hero-terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+        </div>
+        <div class="terminal-body">
+          <div><span class="t-prompt">$</span> <span class="t-cmd">rukkie scan</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-dim">my-backend  [dev]</span></div>
+          <div>&nbsp;</div>
+          <div>🟢 <span class="t-ok">auth-service</span>         &nbsp;&nbsp;45ms&nbsp;&nbsp;&nbsp; 3/3 endpoints ok</div>
+          <div>🔴 <span class="t-err">payment-service</span>      —&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0/2 endpoints ok&nbsp; <span class="t-dim">(connection refused)</span></div>
+          <div>🟡 <span class="t-warn">graphql-api</span>          920ms&nbsp; 1/2 endpoints ok</div>
+          <div>&nbsp;</div>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">rukkie trace payment-service /charge</span></div>
+          <div>&nbsp;</div>
+          <div><span class="t-dim">Root Cause:</span></div>
+          <div>&nbsp;&nbsp;❌ <span class="t-err">ChargeRepo.createTransaction</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-dim">Database timeout after 5000ms</span></div>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="features" style="margin-top: 56px;">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Concurrent scanning</h3>
+          <p>All services scanned in parallel. 50+ services in under 3 seconds.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>Deep endpoint probing</h3>
+          <p>Test REST endpoints and GraphQL queries, not just pings.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔗</div>
+          <h3>Distributed tracing</h3>
+          <p>Root cause analysis across service boundaries via Jaeger.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h3>Zero-config agents</h3>
+          <p>One line to instrument Node.js (Express/Fastify) or Python (FastAPI/Flask).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+
+      <!-- QUICK START -->
+      <section id="quick-start">
+        <h2>Quick Start</h2>
+        <p class="section-desc">Get up and running in under 2 minutes.</p>
+
+        <h3>1. Download &amp; install</h3>
+        <p>Download <code>rukkie-setup.exe</code> from the latest GitHub release. Run it — it installs the binary and adds it to your system PATH automatically.</p>
+        <a href="https://github.com/rukkiecodes/rukkiepulse/releases/latest" class="btn btn-primary" target="_blank" style="margin-bottom: 20px; display:inline-flex;">↓ Download Installer</a>
+
+        <h3>2. Create <code>rukkie.yaml</code> in your project</h3>
+        <pre><span class="key">project</span>: my-backend
+
+<span class="key">observability</span>:
+  <span class="key">jaeger</span>:
+    <span class="key">url</span>: <span class="val">http://localhost:16686</span>
+
+<span class="key">environments</span>:
+  <span class="key">dev</span>:
+    <span class="key">services</span>:
+      - <span class="key">name</span>: <span class="val">auth-service</span>
+        <span class="key">url</span>: <span class="val">http://localhost:3000</span>
+        <span class="key">type</span>: <span class="val">REST</span>
+        <span class="key">endpoints</span>:
+          - <span class="key">path</span>: <span class="val">/health</span>
+            <span class="key">method</span>: <span class="val">GET</span>
+            <span class="key">expect_status</span>: <span class="val">200</span></pre>
+
+        <h3>3. Log in and scan</h3>
+        <pre><span class="t-prompt">$</span> rukkie login
+<span class="t-dim">Password: ••••••••</span>
+<span class="t-ok">✅ Logged in to RukkiePulse</span>
+
+<span class="t-prompt">$</span> rukkie scan</pre>
+      </section>
+
+      <!-- CONFIGURATION -->
+      <section id="configuration">
+        <h2>Configuration</h2>
+        <p class="section-desc"><code>rukkie.yaml</code> lives in the root of your project.</p>
+
+        <h3>Full example</h3>
+        <pre><span class="key">project</span>: my-backend
+
+<span class="key">observability</span>:
+  <span class="key">jaeger</span>:
+    <span class="key">url</span>: <span class="val">http://localhost:16686</span>
+
+<span class="key">environments</span>:
+  <span class="key">dev</span>:
+    <span class="key">services</span>:
+      - <span class="key">name</span>: <span class="val">auth-service</span>
+        <span class="key">url</span>: <span class="val">http://localhost:3000</span>
+        <span class="key">type</span>: <span class="val">REST</span>
+        <span class="key">endpoints</span>:
+          - <span class="key">path</span>: <span class="val">/login</span>
+            <span class="key">method</span>: <span class="val">POST</span>
+            <span class="key">body</span>: <span class="val">'{"email":"test@test.com","password":"test"}'</span>
+            <span class="key">expect_status</span>: <span class="val">200</span>
+
+      - <span class="key">name</span>: <span class="val">graphql-api</span>
+        <span class="key">url</span>: <span class="val">http://localhost:4000/graphql</span>
+        <span class="key">type</span>: <span class="val">GRAPHQL</span>
+        <span class="key">endpoints</span>:
+          - <span class="key">query</span>: <span class="val">'{ __typename }'</span>
+            <span class="key">expect_no_errors</span>: <span class="val">true</span>
+
+  <span class="key">production</span>:
+    <span class="key">services</span>:
+      - <span class="key">name</span>: <span class="val">auth-service</span>
+        <span class="key">url</span>: <span class="val">https://auth.myapp.com</span>
+        <span class="key">type</span>: <span class="val">REST</span></pre>
+
+        <table>
+          <tr><th>Field</th><th>Description</th></tr>
+          <tr><td>project</td><td>Display name shown in CLI output</td></tr>
+          <tr><td>observability.jaeger.url</td><td>Jaeger Query UI URL for <code>rukkie trace</code></td></tr>
+          <tr><td>environments.&lt;name&gt;</td><td>Named environment (dev, staging, production…)</td></tr>
+          <tr><td>services[].name</td><td>Display name</td></tr>
+          <tr><td>services[].url</td><td>Base URL of the service</td></tr>
+          <tr><td>services[].type</td><td><code>REST</code> or <code>GRAPHQL</code></td></tr>
+          <tr><td>endpoints[].path</td><td>URL path to probe (REST)</td></tr>
+          <tr><td>endpoints[].method</td><td>HTTP method — default: <code>GET</code></td></tr>
+          <tr><td>endpoints[].body</td><td>JSON request body</td></tr>
+          <tr><td>endpoints[].expect_status</td><td>Expected HTTP status — default: <code>200</code></td></tr>
+          <tr><td>endpoints[].query</td><td>GraphQL query string</td></tr>
+          <tr><td>endpoints[].expect_no_errors</td><td>Fail if response contains <code>errors</code></td></tr>
+        </table>
+      </section>
+
+      <!-- COMMANDS -->
+      <section id="cmd-login">
+        <h2>Commands</h2>
+        <p class="section-desc">All commands require a <code>rukkie.yaml</code> in the current directory, except <code>login</code> and <code>logout</code>.</p>
+
+        <div class="cmd-block">
+          <div class="cmd-header">
+            <span class="cmd-name">rukkie login</span>
+            <span class="cmd-desc">Authenticate — required before all other commands</span>
+          </div>
+          <div class="cmd-body">
+            <pre>rukkie login</pre>
+            <p>Prompts for a password, generates a local JWT, and stores the session at <code>~/.rukkie/config.yaml</code>. Sessions last 30 days.</p>
+          </div>
+        </div>
+
+        <div class="cmd-block" id="cmd-scan">
+          <div class="cmd-header">
+            <span class="cmd-name">rukkie scan</span>
+            <span class="cmd-desc">Scan all services: health + endpoint probes</span>
+          </div>
+          <div class="cmd-body">
+            <pre>rukkie scan
+rukkie scan <span class="flag">--env</span> production
+rukkie scan <span class="flag">--errors-only</span></pre>
+            <table>
+              <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+              <tr><td>--env, -e</td><td><code>dev</code></td><td>Environment to use</td></tr>
+              <tr><td>--errors-only</td><td>false</td><td>Show only failing or degraded services</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="cmd-block" id="cmd-status">
+          <div class="cmd-header">
+            <span class="cmd-name">rukkie status</span>
+            <span class="cmd-desc">Alias for scan — same flags</span>
+          </div>
+          <div class="cmd-body">
+            <pre>rukkie status
+rukkie status <span class="flag">--errors-only</span></pre>
+          </div>
+        </div>
+
+        <div class="cmd-block" id="cmd-inspect">
+          <div class="cmd-header">
+            <span class="cmd-name">rukkie inspect &lt;service&gt;</span>
+            <span class="cmd-desc">Deep-dive into one service</span>
+          </div>
+          <div class="cmd-body">
+            <pre>rukkie inspect auth-service
+rukkie inspect auth-service <span class="flag">--env</span> production</pre>
+            <p>Shows health status, dependency connections, and a per-endpoint breakdown with latency and status codes.</p>
+          </div>
+        </div>
+
+        <div class="cmd-block" id="cmd-trace">
+          <div class="cmd-header">
+            <span class="cmd-name">rukkie trace &lt;service&gt; [endpoint]</span>
+            <span class="cmd-desc">Fetch and display distributed traces from Jaeger</span>
+          </div>
+          <div class="cmd-body">
+            <pre><span class="comment"># Latest trace for a service</span>
+rukkie trace auth-service
+
+<span class="comment"># Filter to a specific endpoint</span>
+rukkie trace auth-service /login
+
+<span class="comment"># Specific trace by ID</span>
+rukkie trace auth-service <span class="flag">--trace-id</span> abc123def456
+
+<span class="comment"># Show last 5 traces</span>
+rukkie trace auth-service <span class="flag">--last</span> 5
+
+<span class="comment"># Render as flame graph</span>
+rukkie trace auth-service /login <span class="flag">--flame</span></pre>
+            <table>
+              <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+              <tr><td>--trace-id</td><td>—</td><td>Fetch a specific trace by ID</td></tr>
+              <tr><td>--last</td><td><code>1</code></td><td>Number of recent traces to show</td></tr>
+              <tr><td>--flame</td><td>false</td><td>Render as horizontal flame graph</td></tr>
+            </table>
+            <div class="callout warn">
+              <p>⚠️ Requires Jaeger to be running and <code>observability.jaeger.url</code> set in <code>rukkie.yaml</code>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="cmd-block" id="cmd-watch">
+          <div class="cmd-header">
+            <span class="cmd-name">rukkie watch</span>
+            <span class="cmd-desc">Live-updating dashboard — refreshes on an interval</span>
+          </div>
+          <div class="cmd-body">
+            <pre>rukkie watch
+rukkie watch <span class="flag">--interval</span> 5s
+rukkie watch <span class="flag">--env</span> production <span class="flag">--interval</span> 30s</pre>
+            <table>
+              <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+              <tr><td>--interval</td><td><code>10s</code></td><td>Refresh interval. Accepts <code>5s</code>, <code>1m</code>, etc.</td></tr>
+              <tr><td>--env, -e</td><td><code>dev</code></td><td>Environment to use</td></tr>
+            </table>
+            <p>Press <code>Ctrl+C</code> to stop.</p>
+          </div>
+        </div>
+
+        <div class="cmd-block" id="cmd-logout">
+          <div class="cmd-header">
+            <span class="cmd-name">rukkie logout</span>
+            <span class="cmd-desc">Clear the stored session</span>
+          </div>
+          <div class="cmd-body">
+            <pre>rukkie logout</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- AGENTS -->
+      <section id="agents">
+        <h2>Agent SDKs</h2>
+        <p class="section-desc">Drop one line into your service. The agent auto-instruments requests, exposes <code>/__rukkie/health</code>, and pushes traces to Jaeger.</p>
+
+        <div id="agent-node">
+          <h3>Node.js</h3>
+          <pre>npm install rukkie-agent</pre>
+          <pre><span class="comment">// Express</span>
+import express from 'express'
+import { initRukkie } from 'rukkie-agent'
+
+const app = express()
+
+initRukkie({
+  serviceName: <span class="val">'auth-service'</span>,
+  apiKey: <span class="val">'rk_live_xxx'</span>,
+  dependencies: {
+    db: async () => checkDbConnection(),
+    redis: async () => checkRedisConnection(),
+  }
+}, app)
+
+<span class="comment">// Works with Fastify too — same API</span></pre>
+          <p>Auto-detects <strong>Express</strong> and <strong>Fastify</strong>. Instruments all HTTP requests and exposes <code>GET /__rukkie/health</code> automatically.</p>
+        </div>
+
+        <div id="agent-python">
+          <h3>Python</h3>
+          <pre>pip install rukkie-agent</pre>
+          <pre><span class="comment"># FastAPI</span>
+from fastapi import FastAPI
+from rukkie_agent import init_rukkie
+
+app = FastAPI()
+
+init_rukkie(
+    service_name=<span class="val">"auth-service"</span>,
+    api_key=<span class="val">"rk_live_xxx"</span>,
+    app=app,
+    dependencies={
+        "db": check_db_connection,
+        "redis": check_redis_connection,
+    }
+)
+
+<span class="comment"># Works with Flask too — same API</span></pre>
+          <p>Auto-detects <strong>FastAPI</strong> and <strong>Flask</strong>. Same capabilities as the Node.js agent.</p>
+        </div>
+      </section>
+
+      <!-- JAEGER -->
+      <section id="jaeger">
+        <h2>Jaeger Setup</h2>
+        <p class="section-desc">Required for <code>rukkie trace</code>. Runs locally in Docker — no account or API key needed.</p>
+
+        <h3>Start Jaeger (all-in-one)</h3>
+        <pre>docker run -d --name jaeger \
+  -p 16686:16686 \
+  -p 4317:4317 \
+  jaegertracing/all-in-one:latest</pre>
+
+        <table>
+          <tr><th>Port</th><th>Purpose</th></tr>
+          <tr><td>16686</td><td>Jaeger UI + Query API (used by the CLI)</td></tr>
+          <tr><td>4317</td><td>OTel gRPC endpoint (used by agents)</td></tr>
+        </table>
+
+        <p>Add to <code>rukkie.yaml</code>:</p>
+        <pre><span class="key">observability</span>:
+  <span class="key">jaeger</span>:
+    <span class="key">url</span>: <span class="val">http://localhost:16686</span></pre>
+
+        <p>Set <code>collectorUrl</code> in your agents to <code>http://localhost:4317</code> (this is already the default).</p>
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <span class="footer-logo">rukkiepulse</span>
+      <span>Built by <a href="https://github.com/rukkiecodes">rukkiecodes</a></span>
+      <a href="https://github.com/rukkiecodes/rukkiepulse" target="_blank">GitHub →</a>
+    </footer>
+
+  </div><!-- end page body -->
+</div><!-- end layout -->
+
+<script src="assets/js/nav.js"></script>
+</body>
+</html>

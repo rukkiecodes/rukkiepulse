@@ -8,8 +8,17 @@ import (
 )
 
 type Config struct {
-	Project      string                 `yaml:"project"`
-	Environments map[string]Environment `yaml:"environments"`
+	Project       string                 `yaml:"project"`
+	Environments  map[string]Environment `yaml:"environments"`
+	Observability Observability          `yaml:"observability"`
+}
+
+type Observability struct {
+	Jaeger JaegerConfig `yaml:"jaeger"`
+}
+
+type JaegerConfig struct {
+	URL string `yaml:"url"` // e.g. http://localhost:16686
 }
 
 type Environment struct {
@@ -17,9 +26,23 @@ type Environment struct {
 }
 
 type Service struct {
-	Name string `yaml:"name"`
-	URL  string `yaml:"url"`
-	Type string `yaml:"type"` // REST | GRAPHQL
+	Name      string     `yaml:"name"`
+	URL       string     `yaml:"url"`
+	Type      string     `yaml:"type"` // REST | GRAPHQL
+	APIKey    string     `yaml:"api_key"`
+	Endpoints []Endpoint `yaml:"endpoints"`
+}
+
+type Endpoint struct {
+	// REST
+	Path         string `yaml:"path"`
+	Method       string `yaml:"method"`       // GET | POST | PUT | DELETE (default: GET)
+	Body         string `yaml:"body"`
+	ExpectStatus int    `yaml:"expect_status"` // default: 200
+
+	// GraphQL
+	Query          string `yaml:"query"`
+	ExpectNoErrors bool   `yaml:"expect_no_errors"`
 }
 
 func Load(path string) (*Config, error) {

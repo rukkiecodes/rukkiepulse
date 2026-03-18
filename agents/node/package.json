@@ -1,0 +1,35 @@
+{
+  "name": "rukkie-agent",
+  "version": "0.1.0",
+  "description": "RukkiePulse agent SDK for Node.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.57.0",
+    "@opentelemetry/instrumentation-express": "^0.44.0",
+    "@opentelemetry/instrumentation-fastify": "^0.44.0",
+    "@opentelemetry/instrumentation-http": "^0.57.0",
+    "@opentelemetry/resources": "^1.29.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/sdk-trace-node": "^1.29.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "peerDependencies": {
+    "express": ">=4.0.0",
+    "fastify": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": { "optional": true },
+    "fastify": { "optional": true }
+  }
+}

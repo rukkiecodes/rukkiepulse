@@ -1,0 +1,26 @@
+# Binary
+/rukkie
+/rukkie.exe
+
+# Go
+*.test
+*.out
+vendor/
+
+# GoReleaser
+dist/
+
+# Installer output
+installer/output/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Env
+.env
