@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go version:*)",
+      "Bash(cmd.exe /c \"go version\")",
+      "Bash(cmd.exe /c \"where go 2>&1\")",
+      "Bash(cmd.exe /c \"echo %PATH%\")",
+      "Bash(tr ';' '\\\\n')"
+    ]
+  }
+}

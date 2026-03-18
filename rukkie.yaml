@@ -1,0 +1,16 @@
+project: my-backend
+
+environments:
+  dev:
+    services:
+      - name: auth-service
+        url: http://localhost:3000
+        type: REST
+
+      - name: payment-service
+        url: http://localhost:3001
+        type: REST
+
+      - name: graphql-api
+        url: http://localhost:4000
+        type: GRAPHQL
