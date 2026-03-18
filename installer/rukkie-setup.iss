@@ -19,7 +19,7 @@ DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 OutputDir=output
 OutputBaseFilename=rukkie-setup
-SetupIconFile=
+SetupIconFile=favicon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -34,17 +34,20 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "rukkie.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "rukkie-terminal.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "favicon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu — launches bat file which handles spaces in path correctly
 Name: "{group}\RukkiePulse Terminal"; \
   Filename: "{app}\rukkie-terminal.bat"; \
+  IconFilename: "{app}\favicon.ico"; \
   WorkingDir: "%USERPROFILE%"; \
   Comment: "Open RukkiePulse terminal"
 
 ; Desktop shortcut
 Name: "{commondesktop}\RukkiePulse Terminal"; \
   Filename: "{app}\rukkie-terminal.bat"; \
+  IconFilename: "{app}\favicon.ico"; \
   WorkingDir: "%USERPROFILE%"; \
   Comment: "Open RukkiePulse terminal"
 

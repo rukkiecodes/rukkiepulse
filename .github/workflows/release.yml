@@ -42,8 +42,10 @@ jobs:
       - name: Build rukkie.exe
         run: go build -ldflags="-s -w" -o rukkie.exe ./cmd/rukkie/
 
-      - name: Copy binary into installer folder
-        run: copy rukkie.exe installer\rukkie.exe
+      - name: Copy assets into installer folder
+        run: |
+          copy rukkie.exe installer\rukkie.exe
+          copy docs\assets\images\favicon.ico installer\favicon.ico
 
       - name: Build Inno Setup installer
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
