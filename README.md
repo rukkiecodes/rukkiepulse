@@ -4,6 +4,8 @@ A CLI-first observability and diagnostics platform for backend services.
 
 Monitor health, probe endpoints, trace errors to their root cause — all from the terminal.
 
+**[Documentation →](https://rukkiepulse.netlify.app)**
+
 ---
 
 ## Installation

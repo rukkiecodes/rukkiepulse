@@ -38,17 +38,17 @@ Source: "rukkie.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "rukkie-terminal.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-; Start Menu shortcut — opens cmd.exe and keeps it open
+; Start Menu shortcut — opens cmd.exe using full path, keeps window open
 Name: "{group}\RukkiePulse Terminal"; \
   Filename: "{sys}\cmd.exe"; \
-  Parameters: "/K ""rukkie"""; \
+  Parameters: "/K ""{app}\rukkie.exe"""; \
   WorkingDir: "%USERPROFILE%"; \
   Comment: "Open RukkiePulse terminal"
 
 ; Desktop shortcut
 Name: "{commondesktop}\RukkiePulse Terminal"; \
   Filename: "{sys}\cmd.exe"; \
-  Parameters: "/K ""rukkie"""; \
+  Parameters: "/K ""{app}\rukkie.exe"""; \
   WorkingDir: "%USERPROFILE%"; \
   Comment: "Open RukkiePulse terminal"
 
@@ -78,7 +78,7 @@ end;
 [Run]
 ; After install — open a cmd window showing the welcome message, stays open
 Filename: "{sys}\cmd.exe"; \
-  Parameters: "/K ""echo. && echo  RukkiePulse installed successfully! && echo. && echo  Run: rukkie login && echo  Docs: https://rukkiecodes.github.io/rukkiepulse && echo."""; \
+  Parameters: "/K ""echo. && echo  RukkiePulse installed successfully! && echo. && echo  Run: rukkie login && echo  Docs: https://rukkiepulse.netlify.app && echo. && {app}\rukkie.exe"""; \
   Flags: nowait postinstall skipifsilent; \
   Description: "Open RukkiePulse terminal"
 
