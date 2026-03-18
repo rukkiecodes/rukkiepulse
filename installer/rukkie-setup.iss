@@ -34,9 +34,23 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 ; The rukkie.exe binary — build it first with: go build -o rukkie.exe ./cmd/rukkie/
 Source: "rukkie.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Launcher batch file — opens a cmd window that stays open
+Source: "rukkie-terminal.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\RukkiePulse"; Filename: "{app}\{#AppExeName}"
+; Start Menu shortcut — opens cmd.exe and keeps it open
+Name: "{group}\RukkiePulse Terminal"; \
+  Filename: "{sys}\cmd.exe"; \
+  Parameters: "/K ""rukkie"""; \
+  WorkingDir: "%USERPROFILE%"; \
+  Comment: "Open RukkiePulse terminal"
+
+; Desktop shortcut
+Name: "{commondesktop}\RukkiePulse Terminal"; \
+  Filename: "{sys}\cmd.exe"; \
+  Parameters: "/K ""rukkie"""; \
+  WorkingDir: "%USERPROFILE%"; \
+  Comment: "Open RukkiePulse terminal"
 
 [Registry]
 ; Add install directory to system PATH
@@ -62,9 +76,11 @@ begin
 end;
 
 [Run]
-Filename: "cmd.exe"; \
-  Parameters: "/C echo RukkiePulse installed. Open a new terminal and run: rukkie login"; \
-  Flags: runhidden
+; After install — open a cmd window showing the welcome message, stays open
+Filename: "{sys}\cmd.exe"; \
+  Parameters: "/K ""echo. && echo  RukkiePulse installed successfully! && echo. && echo  Run: rukkie login && echo  Docs: https://rukkiecodes.github.io/rukkiepulse && echo."""; \
+  Flags: nowait postinstall skipifsilent; \
+  Description: "Open RukkiePulse terminal"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
