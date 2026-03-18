@@ -17,7 +17,7 @@ import (
 // ── palette ──────────────────────────────────────────────────────────────────
 
 var (
-	shellBg     = lipgloss.Color("#0d2b18")
+	shellBg     = lipgloss.Color("#050f09")
 	shellGreen  = lipgloss.Color("#39d353")
 	shellOrange = lipgloss.Color("#f7a541")
 	shellGray   = lipgloss.Color("#8b949e")
@@ -25,7 +25,7 @@ var (
 	shellRed    = lipgloss.Color("#f85149")
 	shellYellow = lipgloss.Color("#d29922")
 	shellBlue   = lipgloss.Color("#58a6ff")
-	shellBorder = lipgloss.Color("#1a4731")
+	shellBorder = lipgloss.Color("#0d2b18")
 )
 
 // ── ASCII logo ────────────────────────────────────────────────────────────────
@@ -230,12 +230,6 @@ func (m ShellModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.appendLine("")
 		m.vp.SetContent(strings.Join(m.lines, "\n"))
 		m.vp.GotoBottom()
-	}
-
-	if m.state == stateReady || m.state == statePassword {
-		var inputCmd tea.Cmd
-		m.input, inputCmd = m.input.Update(msg)
-		cmds = append(cmds, inputCmd)
 	}
 
 	if m.ready {
