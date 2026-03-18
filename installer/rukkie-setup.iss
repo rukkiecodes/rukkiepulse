@@ -32,35 +32,39 @@ MinVersion=10.0
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; The rukkie.exe binary — build it first with: go build -o rukkie.exe ./cmd/rukkie/
 Source: "rukkie.exe"; DestDir: "{app}"; Flags: ignoreversion
-; Launcher batch file — opens a cmd window that stays open
 Source: "rukkie-terminal.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-; Start Menu shortcut — opens cmd.exe using full path, keeps window open
+; Start Menu — launches bat file which handles spaces in path correctly
 Name: "{group}\RukkiePulse Terminal"; \
-  Filename: "{sys}\cmd.exe"; \
-  Parameters: "/K ""{app}\rukkie.exe"""; \
+  Filename: "{app}\rukkie-terminal.bat"; \
   WorkingDir: "%USERPROFILE%"; \
   Comment: "Open RukkiePulse terminal"
 
 ; Desktop shortcut
 Name: "{commondesktop}\RukkiePulse Terminal"; \
-  Filename: "{sys}\cmd.exe"; \
-  Parameters: "/K ""{app}\rukkie.exe"""; \
+  Filename: "{app}\rukkie-terminal.bat"; \
   WorkingDir: "%USERPROFILE%"; \
   Comment: "Open RukkiePulse terminal"
 
 [Registry]
-; Add install directory to system PATH
+; System PATH (when installer is run as admin)
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
   ValueType: expandsz; ValueName: "Path"; \
   ValueData: "{olddata};{app}"; \
-  Check: NeedsAddPath(ExpandConstant('{app}'))
+  Check: NeedsAddPathSystem(ExpandConstant('{app}')); \
+  Flags: preservestringtype
+
+; User PATH (fallback — works without admin, picked up by all new terminals)
+Root: HKCU; Subkey: "Environment"; \
+  ValueType: expandsz; ValueName: "Path"; \
+  ValueData: "{olddata};{app}"; \
+  Check: NeedsAddPathUser(ExpandConstant('{app}')); \
+  Flags: preservestringtype
 
 [Code]
-function NeedsAddPath(Param: string): boolean;
+function NeedsAddPathSystem(Param: string): boolean;
 var
   OrigPath: string;
 begin
@@ -75,11 +79,22 @@ begin
   Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
 end;
 
+function NeedsAddPathUser(Param: string): boolean;
+var
+  OrigPath: string;
+begin
+  if not RegQueryStringValue(HKEY_CURRENT_USER, 'Environment', 'Path', OrigPath)
+  then begin
+    Result := True;
+    exit;
+  end;
+  Result := Pos(';' + Param + ';', ';' + OrigPath + ';') = 0;
+end;
+
 [Run]
-; After install — open a cmd window showing the welcome message, stays open
-Filename: "{sys}\cmd.exe"; \
-  Parameters: "/K ""echo. && echo  RukkiePulse installed successfully! && echo. && echo  Run: rukkie login && echo  Docs: https://rukkiepulse.netlify.app && echo. && {app}\rukkie.exe"""; \
-  Flags: nowait postinstall skipifsilent; \
+; Launch the bat file after install — it uses %~dp0 so spaces in path are safe
+Filename: "{app}\rukkie-terminal.bat"; \
+  Flags: nowait postinstall skipifsilent shellexec; \
   Description: "Open RukkiePulse terminal"
 
 [UninstallDelete]
