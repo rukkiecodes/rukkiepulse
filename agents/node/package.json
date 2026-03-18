@@ -1,12 +1,37 @@
 {
   "name": "rukkie-agent",
   "version": "0.1.0",
-  "description": "RukkiePulse agent SDK for Node.js",
+  "description": "RukkiePulse agent SDK — auto-instrument Node.js services and push telemetry to Jaeger",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "prepublishOnly": "tsc"
+  },
+  "keywords": [
+    "rukkiepulse",
+    "observability",
+    "opentelemetry",
+    "tracing",
+    "monitoring",
+    "express",
+    "fastify"
+  ],
+  "license": "MIT",
+  "author": "rukkiecodes",
+  "homepage": "https://rukkiepulse.netlify.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rukkiecodes/rukkiepulse.git",
+    "directory": "agents/node"
+  },
+  "bugs": {
+    "url": "https://github.com/rukkiecodes/rukkiepulse/issues"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
@@ -31,5 +56,8 @@
   "peerDependenciesMeta": {
     "express": { "optional": true },
     "fastify": { "optional": true }
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -5,8 +5,19 @@ build-backend = "setuptools.backends.legacy:build"
 [project]
 name = "rukkie-agent"
 version = "0.1.0"
-description = "RukkiePulse agent SDK for Python"
+description = "RukkiePulse agent SDK — auto-instrument Python services and push telemetry to Jaeger"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "rukkiecodes", email = "rukkiecodes@gmail.com" }]
 requires-python = ">=3.9"
+keywords = ["rukkiepulse", "observability", "opentelemetry", "tracing", "fastapi", "flask"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Monitoring",
+    "Framework :: FastAPI",
+]
 dependencies = [
     "opentelemetry-sdk>=1.24",
     "opentelemetry-exporter-otlp-proto-grpc>=1.24",
@@ -19,6 +30,11 @@ dependencies = [
 [project.optional-dependencies]
 fastapi = ["fastapi>=0.100", "starlette>=0.27"]
 flask = ["flask>=2.0"]
+
+[project.urls]
+Homepage = "https://rukkiepulse.netlify.app"
+Repository = "https://github.com/rukkiecodes/rukkiepulse"
+Issues = "https://github.com/rukkiecodes/rukkiepulse/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
