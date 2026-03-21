@@ -9,11 +9,11 @@ export interface RukkieConfig {
   serviceName: string
   apiKey: string
   collectorUrl?: string  // default: http://localhost:4317
-  connectUrl?: string    // default: https://rukkiepulse-api.vercel.app/v1/connect
+  connectUrl?: string    // default: https://rukkieapi.vercel.app/v1/connect
   dependencies?: Record<string, DependencyCheck>
 }
 
-const DEFAULT_CONNECT_URL = 'https://rukkiepulse-api.vercel.app/v1/connect'
+const DEFAULT_CONNECT_URL = 'https://rukkieapi.vercel.app/v1/connect'
 
 /**
  * Initialize the RukkiePulse agent.

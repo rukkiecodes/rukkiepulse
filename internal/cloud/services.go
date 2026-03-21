@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	rukkieAPIURL = "https://rukkiepulse-api.vercel.app"
+	rukkieAPIURL = "https://rukkieapi.vercel.app"
 	cliSecret    = "rukkie-cli-v1-xqmjdjjwprnqogokoejz"
 )
 
