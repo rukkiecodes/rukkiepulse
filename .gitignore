@@ -24,3 +24,9 @@ Thumbs.db
 
 # Env
 .env
+
+# Firebase service account keys
+*firebase-adminsdk*.json
+
+# Clockee subprojects (each has its own repo)
+clockee/
