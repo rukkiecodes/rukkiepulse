@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/rukkiecodes/rukkiepulse/internal/auth"
+	"github.com/rukkiecodes/rukkiepulse/internal/cloud"
 	"github.com/rukkiecodes/rukkiepulse/internal/config"
 	"github.com/rukkiecodes/rukkiepulse/internal/engine"
 	"github.com/rukkiecodes/rukkiepulse/internal/output"
@@ -37,8 +38,8 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Load("rukkie.yaml")
 	if err != nil {
-		output.PrintError(err.Error())
-		return nil
+		// No local rukkie.yaml — fall back to cloud services
+		return runCloudScan()
 	}
 
 	services, err := cfg.GetServices(envFlag)
@@ -71,5 +72,15 @@ func runScan(cmd *cobra.Command, args []string) error {
 	}
 
 	output.PrintResults(results)
+	return nil
+}
+
+func runCloudScan() error {
+	services, err := cloud.FetchServices()
+	if err != nil {
+		output.PrintError("Could not reach RukkiePulse cloud: " + err.Error())
+		return nil
+	}
+	output.PrintCloudServices(services)
 	return nil
 }

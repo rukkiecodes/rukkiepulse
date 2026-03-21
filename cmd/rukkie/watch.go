@@ -31,8 +31,11 @@ func runWatch(cmd *cobra.Command, args []string) error {
 
 	cfg, err := config.Load("rukkie.yaml")
 	if err != nil {
-		output.PrintError(err.Error())
-		return nil
+		// No local rukkie.yaml — watch cloud services instead
+		m := output.NewCloudWatchModel(watchIntervalFlag)
+		p := tea.NewProgram(m, tea.WithAltScreen())
+		_, err = p.Run()
+		return err
 	}
 
 	services, err := cfg.GetServices(envFlag)
