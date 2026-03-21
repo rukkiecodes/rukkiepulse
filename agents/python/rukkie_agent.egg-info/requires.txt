@@ -1,0 +1,13 @@
+opentelemetry-sdk>=1.24
+opentelemetry-exporter-otlp-proto-grpc>=1.24
+opentelemetry-instrumentation-fastapi>=0.45b0
+opentelemetry-instrumentation-flask>=0.45b0
+opentelemetry-instrumentation-requests>=0.45b0
+opentelemetry-instrumentation-httpx>=0.45b0
+
+[fastapi]
+fastapi>=0.100
+starlette>=0.27
+
+[flask]
+flask>=2.0

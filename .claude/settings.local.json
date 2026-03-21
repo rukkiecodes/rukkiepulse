@@ -5,7 +5,19 @@
       "Bash(cmd.exe /c \"go version\")",
       "Bash(cmd.exe /c \"where go 2>&1\")",
       "Bash(cmd.exe /c \"echo %PATH%\")",
-      "Bash(tr ';' '\\\\n')"
+      "Bash(tr ';' '\\\\n')",
+      "Bash(python3 -c \":*)",
+      "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command \"\\(Get-Content ''internal/output/shell.go''\\) -replace ''out, err := runRukkie\\\\\\(exe, \"\"login\"\", \"\"--password\"\", password\\\\\\)'', ''out, err := runRukkieStdin\\(exe, password, \"\"login\"\"\\)'' | Set-Content ''internal/output/shell.go''\")",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npm publish:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m build)",
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(gh run:*)",
+      "Bash(xxd .git/config)",
+      "Bash(ls .git/config*)"
     ]
   }
 }

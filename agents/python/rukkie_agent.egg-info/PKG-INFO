@@ -1,0 +1,71 @@
+Metadata-Version: 2.4
+Name: rukkie-agent
+Version: 0.1.0
+Summary: RukkiePulse agent SDK — auto-instrument Python services and push telemetry to Jaeger
+Author-email: rukkiecodes <rukkiecodes@gmail.com>
+License: MIT
+Project-URL: Homepage, https://rukkiepulse.netlify.app
+Project-URL: Repository, https://github.com/rukkiecodes/rukkiepulse
+Project-URL: Issues, https://github.com/rukkiecodes/rukkiepulse/issues
+Keywords: rukkiepulse,observability,opentelemetry,tracing,fastapi,flask
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: System :: Monitoring
+Classifier: Framework :: FastAPI
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: opentelemetry-sdk>=1.24
+Requires-Dist: opentelemetry-exporter-otlp-proto-grpc>=1.24
+Requires-Dist: opentelemetry-instrumentation-fastapi>=0.45b0
+Requires-Dist: opentelemetry-instrumentation-flask>=0.45b0
+Requires-Dist: opentelemetry-instrumentation-requests>=0.45b0
+Requires-Dist: opentelemetry-instrumentation-httpx>=0.45b0
+Provides-Extra: fastapi
+Requires-Dist: fastapi>=0.100; extra == "fastapi"
+Requires-Dist: starlette>=0.27; extra == "fastapi"
+Provides-Extra: flask
+Requires-Dist: flask>=2.0; extra == "flask"
+
+# rukkie-agent (Python)
+
+Auto-instrument Python backend services for [RukkiePulse](https://rukkiepulse.netlify.app).
+
+## Install
+
+```bash
+pip install rukkie-agent
+```
+
+## Usage
+
+```python
+# FastAPI
+from fastapi import FastAPI
+from rukkie_agent import init_rukkie
+
+app = FastAPI()
+
+init_rukkie(
+    service_name="auth-service",
+    api_key="rk_live_xxx",
+    app=app,
+    dependencies={
+        "db": check_db_connection,
+        "redis": check_redis_connection,
+    }
+)
+
+# Flask
+from flask import Flask
+from rukkie_agent import init_rukkie
+
+app = Flask(__name__)
+init_rukkie(service_name="auth-service", api_key="rk_live_xxx", app=app)
+```
+
+Exposes `GET /__rukkie/health` and pushes traces to your Jaeger collector.
+
+## Docs
+
+[rukkiepulse.netlify.app](https://rukkiepulse.netlify.app)
