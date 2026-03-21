@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Handling — Clockee</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo">Clockee</a>
+  <span class="sep">/</span>
+  <span class="page-title">Data Handling</span>
+  <nav class="top-nav">
+    <a href="privacy-policy.html">Privacy Policy</a>
+    <a href="data-handling.html" class="active">Data Handling</a>
+    <a href="terms.html">Terms of Service</a>
+  </nav>
+</header>
+
+<main>
+  <div class="doc-header">
+    <h1>Data Handling &amp; Deletion Policy</h1>
+    <div class="doc-meta">
+      <span>Effective: 1 January 2025</span>
+      <span>Last updated: 1 March 2026</span>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    This page explains in practical terms what data Clockee stores for each user type,
+    how it is protected, how long it is kept, and exactly what happens when you request
+    deletion.
+  </div>
+
+  <h2>1. Data We Store Per User Type</h2>
+
+  <h3>Administrators</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Data Item</th><th>Purpose</th><th>Retention</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Name, email, phone</td><td>Account identity &amp; login</td><td>Until account deleted</td></tr>
+      <tr><td>Profile photo</td><td>In-app display</td><td>Until account deleted</td></tr>
+      <tr><td>Encrypted password hash</td><td>Authentication</td><td>Until account deleted</td></tr>
+      <tr><td>Institution affiliation</td><td>Access scoping</td><td>Until account deleted</td></tr>
+      <tr><td>Login audit logs</td><td>Security monitoring</td><td>12 months</td></tr>
+      <tr><td>Support ticket history</td><td>Customer support</td><td>24 months after closure</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Staff Members</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Data Item</th><th>Purpose</th><th>Retention</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Name, email, phone</td><td>Account identity &amp; OTP login</td><td>Until account deleted</td></tr>
+      <tr><td>Profile photo</td><td>In-app display</td><td>Until account deleted</td></tr>
+      <tr><td>Clock-in / clock-out records</td><td>Attendance tracking</td><td>Until account deleted</td></tr>
+      <tr><td>GPS coordinates at clock-in</td><td>Location verification (if enabled)</td><td>Until account deleted</td></tr>
+      <tr><td>Leave requests and approvals</td><td>Payroll / HR compliance</td><td>Until account deleted</td></tr>
+      <tr><td>Direct messages with admin</td><td>Internal communication</td><td>Until account deleted</td></tr>
+      <tr><td>Announcements received</td><td>Read receipts</td><td>Until account deleted</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Parents / Guardians</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Data Item</th><th>Purpose</th><th>Retention</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Name, email, phone</td><td>Account identity &amp; OTP login</td><td>Until account deleted</td></tr>
+      <tr><td>Linked student records</td><td>Viewing child's attendance</td><td>Until account deleted</td></tr>
+      <tr><td>Direct messages with admin</td><td>Internal communication</td><td>Until account deleted</td></tr>
+      <tr><td>Notifications received</td><td>Engagement tracking</td><td>Until account deleted</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Students</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Data Item</th><th>Purpose</th><th>Retention</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Name, date of birth, gender</td><td>Student identification</td><td>Until removed by Institution</td></tr>
+      <tr><td>Class / grade assignment</td><td>Grouping and reporting</td><td>Until removed by Institution</td></tr>
+      <tr><td>Attendance passcode / QR code</td><td>Scan-based attendance</td><td>Until removed by Institution</td></tr>
+      <tr><td>Attendance scan records</td><td>Attendance reports</td><td>Until removed by Institution</td></tr>
+      <tr><td>Emergency contact details</td><td>Safety / welfare</td><td>Until removed by Institution</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. How Data Is Stored</h2>
+
+  <h3>2.1 Database</h3>
+  <p>
+    All personal data is stored in a PostgreSQL database hosted on infrastructure managed by
+    Clockee. The database server is not publicly accessible; it accepts connections only from
+    Clockee application servers over a private network.
+  </p>
+
+  <h3>2.2 Encryption</h3>
+  <ul>
+    <li><strong>In transit:</strong> All connections between clients and Clockee servers use
+    TLS 1.2 or higher.</li>
+    <li><strong>At rest:</strong> Database volumes are encrypted using AES-256. Passwords are
+    stored as bcrypt hashes and are never stored or logged in plaintext.</li>
+    <li><strong>Tokens:</strong> JWT access tokens are signed with a secret key stored only in
+    server environment variables, never in the database or source code.</li>
+  </ul>
+
+  <h3>2.3 Backups</h3>
+  <p>
+    Automated encrypted backups are taken daily and retained for <strong>30 days</strong>. Backups
+    are stored in a separate geographic region from the primary database. Deleted user data is
+    excluded from backups taken after the deletion is processed; however, it may persist in
+    backups created before the deletion for up to 30 days, after which those backups expire.
+  </p>
+
+  <h2>3. Access Controls</h2>
+  <ul>
+    <li>Each user can only access data within their own Institution.</li>
+    <li>Administrators can view staff, parent, and student records for their Institution only.</li>
+    <li>Staff members can view only their own profile and attendance records.</li>
+    <li>Parents can view their own profile and their linked children's attendance.</li>
+    <li>Super-administrators at the platform level have access scoped to operational needs and
+    are bound by confidentiality obligations.</li>
+    <li>All privileged access actions are written to an audit log.</li>
+  </ul>
+
+  <h2>4. Data Exports</h2>
+  <p>
+    Any user can download a copy of their personal data at any time via the
+    <a href="../data-portal/">Data Portal</a>. Exports include:
+  </p>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>User Type</th><th>Export Contains</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Admin</td>
+        <td>Profile details, institution info, login history, support ticket history</td>
+      </tr>
+      <tr>
+        <td>Staff</td>
+        <td>Profile details, full attendance history, leave requests, direct messages</td>
+      </tr>
+      <tr>
+        <td>Parent</td>
+        <td>Profile details, linked students, direct messages, notifications</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    Exports are generated as PDF documents and are available immediately for download. Exports
+    are not stored on Clockee servers after delivery.
+  </p>
+
+  <h2>5. Account Deletion</h2>
+
+  <div class="callout callout-warn">
+    Account deletion is permanent and irreversible. Once confirmed, your data cannot be recovered.
+  </div>
+
+  <h3>5.1 Requesting Deletion</h3>
+  <p>
+    Any user may submit an account deletion request via the
+    <a href="../data-portal/">Data Portal</a>. The request enters a
+    <strong>pending</strong> state and is processed within <strong>30 days</strong>.
+  </p>
+  <p>
+    During the pending period your account is deactivated — you cannot log in or use Clockee —
+    but your data is not yet deleted. You may cancel the request within this window to
+    reactivate your account.
+  </p>
+
+  <h3>5.2 Cancelling a Deletion Request</h3>
+  <p>
+    To cancel a pending deletion, log in to the
+    <a href="../data-portal/">Data Portal</a> before the deletion date and click
+    "Cancel Request". Your account will be reactivated immediately.
+  </p>
+
+  <h3>5.3 What Is Deleted</h3>
+  <p>When deletion is executed, the following are <strong>permanently removed</strong>:</p>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>User Type</th><th>Data Deleted</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-blue">Admin</span></td>
+        <td>
+          Profile, credentials, support tickets, direct messages.
+          <em>Note: cannot delete if you are the only admin for an active Institution —
+          reassign the admin role first.</em>
+        </td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">Staff</span></td>
+        <td>Profile, all attendance records, leave records, direct messages</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-blue">Parent</span></td>
+        <td>Profile, notification history, direct messages. Student records are <em>not</em> deleted — they are owned by the Institution.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.4 What Is Retained After Deletion</h3>
+  <ul>
+    <li>
+      <strong>Anonymised aggregate statistics</strong> — e.g., overall attendance rates for the
+      Institution, with no link to a specific user.
+    </li>
+    <li>
+      <strong>Legal and financial records</strong> — if required by applicable law (e.g., payroll
+      records required by labour regulations), data may be retained in a restricted archive for
+      the minimum legally required period.
+    </li>
+    <li>
+      <strong>Backup copies</strong> — deleted data may persist in encrypted backups for up to
+      30 days before those backups expire.
+    </li>
+  </ul>
+
+  <h3>5.5 Deletion Timeline</h3>
+  <table class="data-table">
+    <thead>
+      <tr><th>Stage</th><th>What Happens</th><th>Timing</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Request submitted</td>
+        <td>Account deactivated; deletion request created</td>
+        <td>Immediately</td>
+      </tr>
+      <tr>
+        <td>Confirmation email</td>
+        <td>Email sent to registered address confirming the request</td>
+        <td>Within 1 hour</td>
+      </tr>
+      <tr>
+        <td>Grace period</td>
+        <td>User may cancel and restore account</td>
+        <td>Up to 30 days</td>
+      </tr>
+      <tr>
+        <td>Data deletion executed</td>
+        <td>All personal data permanently removed from live database</td>
+        <td>Within 30 days of request</td>
+      </tr>
+      <tr>
+        <td>Backup expiry</td>
+        <td>Encrypted backups containing the data expire</td>
+        <td>Within 60 days of request</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>6. Data Breach Notification</h2>
+  <p>
+    In the event of a data breach affecting personal data, Clockee will:
+  </p>
+  <ul>
+    <li>Contain and investigate the breach as a priority</li>
+    <li>Notify affected Institution administrators within <strong>72 hours</strong> of becoming
+    aware of the breach</li>
+    <li>Provide a written incident report detailing the nature of the breach, data affected,
+    likely consequences, and remediation steps taken</li>
+    <li>Comply with applicable regulatory notification obligations</li>
+  </ul>
+
+  <h2>7. Contact</h2>
+  <p>
+    For questions about data storage, deletion, or export, please use the
+    <a href="../data-portal/">Data Portal</a>. For urgent data concerns, contact your
+    Institution administrator who can escalate directly to the Clockee team.
+  </p>
+
+  <div class="callout callout-tip">
+    You can download all your personal data or submit a deletion request at any time via the
+    <a href="../data-portal/">Clockee Data Portal</a>.
+  </div>
+</main>
+
+<footer>
+  <span>&copy; 2025 Clockee. All rights reserved.</span>
+  &nbsp;&middot;&nbsp;
+  <a href="privacy-policy.html">Privacy Policy</a>
+  &nbsp;&middot;&nbsp;
+  <a href="data-handling.html">Data Handling</a>
+  &nbsp;&middot;&nbsp;
+  <a href="terms.html">Terms of Service</a>
+</footer>
+
+</body>
+</html>

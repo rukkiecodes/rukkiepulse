@@ -1,0 +1,12 @@
+{
+  "name": "clockee-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n server,password-reset,attendance,super-admin,data-portal,reports,auditing -c blue,magenta,cyan,yellow,green,red,white \"npm --prefix server run dev\" \"npm --prefix services/password-reset run dev\" \"npm --prefix services/students-attendance-service run dev\" \"python -m uvicorn app.main:app --reload --port 4000 --app-dir services/super-admin\" \"python -m uvicorn app.main:app --reload --port 4002 --app-dir services/data-portal\" \"python -m uvicorn app.main:app --reload --port 4003 --app-dir services/reports\" \"python -m uvicorn app.main:app --reload --port 4004 --app-dir services/auditing\"",
+    "start": "concurrently -n server,password-reset,attendance,super-admin,data-portal,reports,auditing -c blue,magenta,cyan,yellow,green,red,white \"npm --prefix server start\" \"npm --prefix services/password-reset start\" \"npm --prefix services/students-attendance-service start\" \"python -m uvicorn app.main:app --port 4000 --app-dir services/super-admin\" \"python -m uvicorn app.main:app --port 4002 --app-dir services/data-portal\" \"python -m uvicorn app.main:app --port 4003 --app-dir services/reports\" \"python -m uvicorn app.main:app --port 4004 --app-dir services/auditing\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

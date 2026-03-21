@@ -23,7 +23,10 @@
       "Bash(node -e \":*)",
       "Bash(node scripts/migrate.js)",
       "Bash(node scripts/seed-user.js)",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "Bash(go vet:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(ls -la /c/Users/Rukkiecodes/Documents/projects/hybrid/rukkiePulse/clockee/backend/server/*.js)"
     ]
   }
 }
