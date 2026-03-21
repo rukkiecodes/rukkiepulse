@@ -1,12 +1,13 @@
 "use client";
-import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, type Service, type ApiKey } from "@/lib/supabase";
 import { generateApiKey } from "@/lib/apikeys";
 
-export default function ServicePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+function ServiceDetail() {
   const router = useRouter();
+  const params = useSearchParams();
+  const id = params.get("id") ?? "";
 
   const [service, setService] = useState<Service | null>(null);
   const [keys, setKeys] = useState<ApiKey[]>([]);
@@ -18,6 +19,7 @@ export default function ServicePage({ params }: { params: Promise<{ id: string }
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    if (!id) { router.replace("/dashboard"); return; }
     loadData();
   }, [id]);
 
@@ -58,10 +60,7 @@ export default function ServicePage({ params }: { params: Promise<{ id: string }
 
   async function revokeKey(keyId: string) {
     if (!confirm("Revoke this API key? Requests using it will fail immediately.")) return;
-    await supabase
-      .from("api_keys")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("id", keyId);
+    await supabase.from("api_keys").update({ revoked_at: new Date().toISOString() }).eq("id", keyId);
     loadData();
   }
 
@@ -78,28 +77,16 @@ export default function ServicePage({ params }: { params: Promise<{ id: string }
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (loading) return null;
-  if (!service) return null;
+  if (loading || !service) return null;
 
   const activeKeys = keys.filter((k) => !k.revoked_at);
   const revokedKeys = keys.filter((k) => k.revoked_at);
 
-  const snippet = {
-    node: `import { initRukkie } from 'rukkie-agent'
-
-initRukkie({
-  serviceName: '${service.name}',
-  apiKey: 'YOUR_API_KEY',
-})`,
-    python: `from rukkie_agent import init_rukkie
-
-init_rukkie(
-    service_name="${service.name}",
-    api_key="YOUR_API_KEY",
-)`,
+  const snippet: Record<string, string> = {
+    node: `import { initRukkie } from 'rukkie-agent'\n\ninitRukkie({\n  serviceName: '${service.name}',\n  apiKey: 'YOUR_API_KEY',\n})`,
+    python: `from rukkie_agent import init_rukkie\n\ninit_rukkie(\n    service_name="${service.name}",\n    api_key="YOUR_API_KEY",\n)`,
     go: `// Go agent coming soon — use the REST API directly`,
-    other: `// POST /api/v1/heartbeat
-// Authorization: Bearer YOUR_API_KEY`,
+    other: `// POST /api/v1/heartbeat\n// Authorization: Bearer YOUR_API_KEY`,
   };
 
   return (
@@ -125,7 +112,7 @@ init_rukkie(
               style={{ width: "100%", justifyContent: "center", marginTop: "20px" }}
               onClick={() => setRevealedKey(null)}
             >
-              I've saved it →
+              I&apos;ve saved it →
             </button>
           </div>
         </div>
@@ -144,10 +131,7 @@ init_rukkie(
             </p>
           )}
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowNewKeyForm(true)}
-        >
+        <button className="btn btn-primary" onClick={() => setShowNewKeyForm(true)}>
           + Generate API Key
         </button>
       </div>
@@ -184,9 +168,7 @@ init_rukkie(
           </h2>
         </div>
         {activeKeys.length === 0 ? (
-          <div className="empty">
-            <p>No active keys. Generate one above.</p>
-          </div>
+          <div className="empty"><p>No active keys. Generate one above.</p></div>
         ) : (
           <table className="table">
             <thead>
@@ -212,18 +194,10 @@ init_rukkie(
                     {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : "Never"}
                   </td>
                   <td style={{ textAlign: "right" }}>
-                    <button
-                      className="btn btn-ghost"
-                      style={{ fontSize: "12px", marginRight: "6px" }}
-                      onClick={() => revokeKey(key.id)}
-                    >
+                    <button className="btn btn-ghost" style={{ fontSize: "12px", marginRight: "6px" }} onClick={() => revokeKey(key.id)}>
                       Revoke
                     </button>
-                    <button
-                      className="btn btn-danger"
-                      style={{ fontSize: "12px" }}
-                      onClick={() => deleteKey(key.id)}
-                    >
+                    <button className="btn btn-danger" style={{ fontSize: "12px" }} onClick={() => deleteKey(key.id)}>
                       Delete
                     </button>
                   </td>
@@ -237,9 +211,7 @@ init_rukkie(
       {/* Code snippet */}
       <div className="card" style={{ marginBottom: "24px" }}>
         <h2 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "12px" }}>Integration Snippet</h2>
-        <pre className="snippet">
-          {snippet[service.language ?? "other"] ?? snippet.other}
-        </pre>
+        <pre className="snippet">{snippet[service.language ?? "other"] ?? snippet.other}</pre>
         <p style={{ color: "var(--muted)", fontSize: "12px", marginTop: "10px" }}>
           Replace <code style={{ color: "var(--orange)" }}>YOUR_API_KEY</code> with an active key above.
         </p>
@@ -255,29 +227,18 @@ init_rukkie(
           </div>
           <table className="table">
             <thead>
-              <tr>
-                <th>Label</th>
-                <th>Key (prefix)</th>
-                <th>Revoked</th>
-                <th></th>
-              </tr>
+              <tr><th>Label</th><th>Key (prefix)</th><th>Revoked</th><th></th></tr>
             </thead>
             <tbody>
               {revokedKeys.map((key) => (
                 <tr key={key.id}>
                   <td style={{ color: "var(--muted)" }}>{key.label}</td>
-                  <td style={{ fontFamily: "monospace", color: "var(--muted)", fontSize: "13px" }}>
-                    {key.key_prefix}…
-                  </td>
+                  <td style={{ fontFamily: "monospace", color: "var(--muted)", fontSize: "13px" }}>{key.key_prefix}…</td>
                   <td style={{ color: "var(--muted)", fontSize: "12px" }}>
                     {key.revoked_at ? new Date(key.revoked_at).toLocaleDateString() : "—"}
                   </td>
                   <td style={{ textAlign: "right" }}>
-                    <button
-                      className="btn btn-danger"
-                      style={{ fontSize: "12px" }}
-                      onClick={() => deleteKey(key.id)}
-                    >
+                    <button className="btn btn-danger" style={{ fontSize: "12px" }} onClick={() => deleteKey(key.id)}>
                       Delete
                     </button>
                   </td>
@@ -288,5 +249,13 @@ init_rukkie(
         </div>
       )}
     </div>
+  );
+}
+
+export default function ServicePage() {
+  return (
+    <Suspense>
+      <ServiceDetail />
+    </Suspense>
   );
 }

@@ -29,7 +29,7 @@ export default function NewServicePage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push(`/dashboard/services/${data.id}`);
+      router.push(`/dashboard/service?id=${data.id}`);
     }
   }
 

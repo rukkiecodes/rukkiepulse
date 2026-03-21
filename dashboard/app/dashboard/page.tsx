@@ -78,7 +78,7 @@ export default function DashboardPage() {
               {services.map((svc) => (
                 <tr key={svc.id} style={{ cursor: "pointer" }}>
                   <td
-                    onClick={() => router.push(`/dashboard/services/${svc.id}`)}
+                    onClick={() => router.push(`/dashboard/service?id=${svc.id}`)}
                     style={{ fontWeight: 600 }}
                   >
                     {svc.name}
@@ -104,7 +104,7 @@ export default function DashboardPage() {
                     <button
                       className="btn btn-ghost"
                       style={{ fontSize: "12px", marginRight: "6px" }}
-                      onClick={() => router.push(`/dashboard/services/${svc.id}`)}
+                      onClick={() => router.push(`/dashboard/service?id=${svc.id}`)}
                     >
                       Manage keys
                     </button>
