@@ -70,6 +70,11 @@
       <a href="#api-keys" class="sidebar-link">API Keys</a>
       <a href="https://rukkiepulse-dashboard.netlify.app" class="sidebar-link" target="_blank">⚡ Open Dashboard ↗</a>
     </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Integration</div>
+      <a href="#cloud-scan" class="sidebar-link">Cloud Scan / Watch</a>
+      <a href="#integration-guide" class="sidebar-link">Express + PostgreSQL Guide</a>
+    </div>
 
     <div class="sidebar-section">
       <div class="sidebar-label">Resources</div>
@@ -506,6 +511,164 @@ init_rukkie(
 )</pre>
 
         <p>To rotate a key: go to the service page → click <strong>Revoke</strong> on the old key → click <strong>+ Generate API Key</strong> for a new one.</p>
+      </section>
+
+      <!-- CLOUD SCAN / WATCH (no rukkie.yaml) -->
+      <section id="cloud-scan">
+        <h2>Scanning Without <code>rukkie.yaml</code></h2>
+        <p class="section-desc">
+          <code>rukkie scan</code> and <code>rukkie watch</code> now work from <em>any</em> directory.
+          If no <code>rukkie.yaml</code> is found, they fall back to the cloud and fetch all services
+          you have registered in the dashboard — no config file needed.
+        </p>
+        <pre><span class="t-prompt">$</span> <span class="t-cmd">rukkie scan</span>
+
+  RukkiePulse  connected services
+
+  ────────────────────────────────────────────────────────────────
+  🟢  Clockee Server          node    Live       last seen 1m ago  2 key(s)
+  🔴  My API                  python  Inactive   last seen 2026-03-10 14:30
+  ⚫  New Service             go      Never connected
+  ────────────────────────────────────────────────────────────────
+
+  🟢 1 live  ·  🔴 1 inactive  ·  ⚫ 1 never connected</pre>
+
+        <p><code>rukkie watch</code> opens a live-updating TUI that refreshes from the cloud on the configured interval:</p>
+        <pre><span class="t-prompt">$</span> <span class="t-cmd">rukkie watch --interval 30s</span>   <span class="t-dim"># live dashboard, refreshes every 30s</span></pre>
+
+        <p>The connection status is determined by the most recent heartbeat received from the service's API key:</p>
+        <ul>
+          <li>🟢 <strong>Live</strong> — heartbeat received &lt; 5 minutes ago</li>
+          <li>🟡 <strong>Recent</strong> — heartbeat received &lt; 1 hour ago</li>
+          <li>🔴 <strong>Inactive</strong> — no heartbeat for &gt; 1 hour</li>
+          <li>⚫ <strong>Never connected</strong> — API key created but no heartbeat ever received</li>
+        </ul>
+      </section>
+
+      <!-- FULL INTEGRATION GUIDE: CLOCKEE SERVER -->
+      <section id="integration-guide">
+        <h2>Full Integration Guide — Express + PostgreSQL</h2>
+        <p class="section-desc">
+          A step-by-step walkthrough of every change made to wire RukkiePulse observability
+          deep into an existing Express server. All examples are taken from the <strong>Clockee Server</strong>
+          integration (Node.js / Express 5 / PostgreSQL / Socket.io).
+        </p>
+
+        <h3>Step 1 — Install the agent</h3>
+        <pre><span class="t-prompt">$</span> npm install rukkie-agent</pre>
+
+        <h3>Step 2 — Register the service &amp; get an API key</h3>
+        <ol>
+          <li>Sign in at the <a href="https://rukkiepulse-dashboard.netlify.app" target="_blank">dashboard</a>.</li>
+          <li>Click <strong>+ New Service</strong> — enter name and language.</li>
+          <li>On the service page click <strong>+ Generate API Key</strong> and copy it immediately.</li>
+          <li>Add to your <code>.env</code>: <code>RUKKIE_PULSE_API_KEY=rk_live_…</code></li>
+        </ol>
+
+        <h3>Step 3 — Bootstrap in <code>app.js</code> (before any middleware)</h3>
+        <pre><span class="kw">const</span> { initRukkie } = require(<span class="str">'rukkie-agent'</span>);
+
+<span class="t-dim">// Call BEFORE cors(), body-parser, and routes</span>
+initRukkie({
+  serviceName: <span class="str">'Clockee Server'</span>,
+  apiKey: process.env.RUKKIE_PULSE_API_KEY,
+  dependencies: {
+    <span class="t-dim">// Probed on every GET /__rukkie/health request</span>
+    database: async () =&gt; {
+      <span class="kw">const</span> client = await pool.connect();
+      await client.query(<span class="str">'SELECT 1'</span>);
+      client.release();
+    },
+  },
+}, app);</pre>
+        <p>This single call:</p>
+        <ul>
+          <li>Boots the OTel SDK (HTTP + Express auto-instrumentation)</li>
+          <li>Fires a startup heartbeat so the dashboard shows the service as <strong>Live</strong></li>
+          <li>Attaches per-request span middleware to Express</li>
+          <li>Registers <code>GET /__rukkie/health</code> that probes all listed dependencies</li>
+        </ul>
+
+        <h3>Step 4 — Create the observability tracer utility</h3>
+        <p>Create <code>middleware/observability/tracer.js</code> — thin wrappers around the OTel API for custom spans:</p>
+        <pre><span class="kw">const</span> { withSpan, recordError } = require(<span class="str">'./middleware/observability/tracer'</span>);
+
+<span class="t-dim">// Wrap any async operation in a named span</span>
+<span class="kw">const</span> result = await withSpan(<span class="str">'my-operation'</span>, { <span class="str">'custom.attr'</span>: <span class="str">'value'</span> }, async () =&gt; {
+  <span class="kw">return</span> await doSomething();
+});
+
+<span class="t-dim">// Record an error on the current active span (call from catch blocks)</span>
+<span class="kw">catch</span> (err) { recordError(err); <span class="kw">throw</span> err; }</pre>
+
+        <h3>Step 5 — Wrap the database pool for per-query tracing</h3>
+        <p>In <code>config/database.js</code>, monkey-patch <code>pool.query()</code> so every SQL call creates an OTel span:</p>
+        <pre><span class="kw">const</span> { withSpan } = require(<span class="str">'../middleware/observability/tracer'</span>);
+<span class="kw">const</span> _originalQuery = pool.query.bind(pool);
+
+pool.query = <span class="kw">function</span> tracedQuery(textOrConfig, values, callback) {
+  <span class="t-dim">// callback-style: pass through unchanged</span>
+  <span class="kw">if</span> (typeof values === <span class="str">'function'</span> || typeof callback === <span class="str">'function'</span>) {
+    <span class="kw">return</span> _originalQuery(textOrConfig, values ?? callback, callback);
+  }
+  <span class="t-dim">// promise-style: wrap in a span</span>
+  <span class="kw">const</span> sql = typeof textOrConfig === <span class="str">'string'</span> ? textOrConfig : textOrConfig.text;
+  <span class="kw">return</span> withSpan(`db.query ${sql.slice(0, 120)}`, {
+    <span class="str">'db.system'</span>: <span class="str">'postgresql'</span>,
+    <span class="str">'db.statement'</span>: sql,
+  }, () =&gt; values ? _originalQuery(textOrConfig, values) : _originalQuery(textOrConfig));
+};</pre>
+        <p>Every query through the pool now appears as a child span in Jaeger — you can see the exact SQL, duration, and any errors.</p>
+
+        <h3>Step 6 — Record errors in the global error handler</h3>
+        <p>Add <code>recordError()</code> to the top of your Express error handler:</p>
+        <pre><span class="kw">const</span> { recordError } = require(<span class="str">'../observability/tracer'</span>);
+
+<span class="kw">const</span> errorHandler = (err, req, res, next) =&gt; {
+  recordError(err, {
+    <span class="str">'http.route'</span>: req.path,
+    <span class="str">'http.method'</span>: req.method,
+    <span class="str">'error.user_id'</span>: req.user?.id || <span class="str">'anonymous'</span>,
+  });
+  <span class="t-dim">// ... rest of your handler</span>
+};</pre>
+
+        <h3>Step 7 — Add a periodic heartbeat in <code>server.js</code></h3>
+        <p>The agent pings once on startup. Add a 2-minute interval so the dashboard stays <strong>Live</strong> even between requests:</p>
+        <pre><span class="kw">function</span> startHeartbeat() {
+  <span class="kw">const</span> apiKey = process.env.RUKKIE_PULSE_API_KEY;
+  <span class="kw">if</span> (!apiKey) return;
+  <span class="kw">const</span> ping = () =&gt; fetch(HEARTBEAT_URL, {
+    method: <span class="str">'POST'</span>,
+    headers: { Authorization: `Bearer ${apiKey}` },
+  }).catch(() =&gt; {});
+  ping();
+  setInterval(ping, 2 * 60 * 1000);
+}
+
+server.listen(PORT, () =&gt; {
+  <span class="t-dim">// ... existing startup logs</span>
+  startHeartbeat();
+});</pre>
+
+        <h3>Step 8 — Create <code>rukkie.yaml</code> in the service root</h3>
+        <pre><span class="key">service</span>:
+  <span class="key">name</span>: <span class="val">Clockee Server</span>
+  <span class="key">language</span>: <span class="val">node</span>
+  <span class="key">apiKey</span>: <span class="val">rk_live_…</span>
+<span class="key">observability</span>:
+  <span class="key">jaeger</span>:
+    <span class="key">url</span>: <span class="val">http://localhost:16686</span>
+  <span class="key">collector</span>: <span class="val">http://localhost:4317</span></pre>
+
+        <h3>What gets traced after integration</h3>
+        <ul>
+          <li>Every HTTP request — method, route, status code, duration</li>
+          <li>Every PostgreSQL query — operation, SQL statement, database name</li>
+          <li>Every outgoing HTTP call — to Twilio, Cloudinary, Paystack, etc.</li>
+          <li>Every unhandled error — exception + stack recorded on the active span</li>
+          <li>Socket.io DB calls — because they use the same traced pool, all their queries appear in traces automatically</li>
+        </ul>
       </section>
 
     </main>

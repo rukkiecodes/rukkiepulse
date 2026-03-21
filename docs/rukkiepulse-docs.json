@@ -326,6 +326,13 @@
           "method": "POST",
           "auth": "Bearer <api_key>",
           "description": "Validates API key by SHA-256 hash, updates last_used_at, returns service name"
+        },
+        {
+          "name": "services-status",
+          "url": "https://xqmjdjjwprnqogokoejz.supabase.co/functions/v1/services-status",
+          "method": "GET",
+          "auth": "x-rukkie-cli: rukkie-cli-v1-xqmjdjjwprnqogokoejz (CLI pre-shared secret)",
+          "description": "Returns all registered services with their most recent last_used_at. Used by rukkie scan / rukkie watch when no rukkie.yaml is present."
         }
       ]
     }
@@ -348,6 +355,105 @@
       "SUPABASE_ACCESS_TOKEN",
       "NPM_TOKEN",
       "PYPI_TOKEN"
+    ]
+  },
+  "real_world_integration": {
+    "title": "Clockee Server — Full Integration Walkthrough",
+    "description": "Step-by-step record of integrating RukkiePulse observability into the Clockee backend (Express.js + PostgreSQL + Socket.io).",
+    "service": {
+      "name": "Clockee Server",
+      "language": "Node.js / Express 5",
+      "database": "PostgreSQL (via pg pool)",
+      "realtime": "Socket.io",
+      "api_key_env": "RUKKIE_PULSE_API_KEY"
+    },
+    "steps": [
+      {
+        "step": 1,
+        "title": "Install the agent",
+        "command": "npm install rukkie-agent",
+        "notes": "Already added to dependencies in clockee/backend/server/package.json"
+      },
+      {
+        "step": 2,
+        "title": "Register the service in the dashboard",
+        "action": "Sign in at https://rukkiepulse-dashboard.netlify.app → + New Service → name: 'Clockee Server', language: node → Generate API Key → copy key"
+      },
+      {
+        "step": 3,
+        "title": "Add the API key to .env",
+        "file": "clockee/backend/server/.env",
+        "line": "RUKKIE_PULSE_API_KEY=rk_live_<your_key>"
+      },
+      {
+        "step": 4,
+        "title": "Bootstrap the agent in app.js",
+        "file": "clockee/backend/server/app.js",
+        "code": "const { initRukkie } = require('rukkie-agent');\n\n// Call BEFORE any route/middleware registration\ninitRukkie({\n  serviceName: 'Clockee Server',\n  apiKey: process.env.RUKKIE_PULSE_API_KEY,\n  dependencies: {\n    // RukkiePulse will probe this on /__rukkie/health\n    database: async () => {\n      const client = await pool.connect();\n      await client.query('SELECT 1');\n      client.release();\n    },\n  },\n}, app);",
+        "what_this_does": [
+          "Boots the OpenTelemetry SDK (HTTP + Express auto-instrumentation)",
+          "Fires a one-shot heartbeat POST to the Supabase Edge Function",
+          "Attaches per-request span middleware to Express",
+          "Registers GET /__rukkie/health that checks all listed dependencies"
+        ]
+      },
+      {
+        "step": 5,
+        "title": "Create the observability tracer utility",
+        "file": "clockee/backend/server/middleware/observability/tracer.js",
+        "description": "Thin wrappers around the OTel API (already initialised by initRukkie). Provides withSpan() and recordError() helpers for custom spans anywhere in the codebase.",
+        "exports": [
+          "withSpan(spanName, attributes, asyncFn) — wraps an async operation in an OTel span, sets OK/ERROR status automatically",
+          "recordError(err, extra) — records an exception on the currently active span; call from catch blocks"
+        ]
+      },
+      {
+        "step": 6,
+        "title": "Wrap the database pool for per-query tracing",
+        "file": "clockee/backend/server/config/database.js",
+        "description": "The pg Pool.query() method is monkey-patched to wrap every promise-style call in an OTel span via withSpan(). Each span carries db.system, db.operation, db.statement, and db.name attributes.",
+        "example_span_name": "db.query SELECT id, email FROM users WHERE id = $1",
+        "notes": "Callback-style queries are passed through unchanged to avoid breaking existing code."
+      },
+      {
+        "step": 7,
+        "title": "Record errors on active spans in the global error handler",
+        "file": "clockee/backend/server/middleware/error/errorHandler.js",
+        "code": "const { recordError } = require('../observability/tracer');\n\nconst errorHandler = (err, req, res, next) => {\n  recordError(err, {\n    'http.route': req.path,\n    'http.method': req.method,\n    'error.user_id': req.user?.id || 'anonymous',\n  });\n  // ... existing logger.error and response logic\n};",
+        "what_this_does": "Attaches the exception and a stack trace to the OTel span that was opened for the failing request, so RukkiePulse (and Jaeger) can surface the error alongside the trace."
+      },
+      {
+        "step": 8,
+        "title": "Add a periodic heartbeat for live dashboard status",
+        "file": "clockee/backend/server/server.js",
+        "description": "A startHeartbeat() function is called once the HTTP server is listening. It fires a POST to the heartbeat Edge Function immediately and then every 2 minutes, keeping the dashboard status green without requiring user traffic.",
+        "code": "function startHeartbeat() {\n  const apiKey = process.env.RUKKIE_PULSE_API_KEY;\n  if (!apiKey) return;\n  const ping = () => fetch(HEARTBEAT_URL, {\n    method: 'POST',\n    headers: { Authorization: `Bearer ${apiKey}` },\n  }).catch(() => {});\n  ping();\n  setInterval(ping, 2 * 60 * 1000);\n}"
+      },
+      {
+        "step": 9,
+        "title": "Create rukkie.yaml in the service root",
+        "file": "clockee/backend/server/rukkie.yaml",
+        "content": "service:\n  name: Clockee Server\n  language: node\n  apiKey: rk_live_<your_key>\nobservability:\n  jaeger:\n    url: http://localhost:16686\n  collector: http://localhost:4317",
+        "notes": "This file lets 'rukkie scan', 'rukkie watch', and 'rukkie inspect' work when run from the clockee/backend/server/ directory. The CLI reads this file to identify the service."
+      }
+    ],
+    "what_is_traced": [
+      "Every HTTP request → method, route, status code, duration (via Express auto-instrumentation)",
+      "Every PostgreSQL query → operation, sanitised SQL statement, database name (via pool.query wrapper)",
+      "Every outgoing HTTP call → Twilio, Termii, Cloudinary, Paystack (via OTel HttpInstrumentation)",
+      "Every unhandled error → exception + stack recorded on the active span",
+      "WebSocket queries → Socket.io event handlers use the traced pool.query, so DB calls inside them are traced automatically"
+    ],
+    "dashboard_status": {
+      "live": "Service is running and heartbeat was received < 5 minutes ago",
+      "recent": "Heartbeat received within the last hour",
+      "inactive": "No heartbeat for > 1 hour",
+      "never_connected": "API key created but no heartbeat ever received"
+    },
+    "cli_commands_after_integration": [
+      { "command": "rukkie scan", "notes": "Run from any directory — fetches all connected services from cloud if no rukkie.yaml is present" },
+      { "command": "rukkie watch", "notes": "Live-updating dashboard; shows Clockee Server status updating in real-time" },
+      { "command": "rukkie scan", "notes": "Run from clockee/backend/server/ to use the local rukkie.yaml for local health probing" }
     ]
   },
   "tech_stack": {
