@@ -62,7 +62,8 @@ var initCmd = &cobra.Command{
 
 		fmt.Printf("\n  ✅  Created rukkie.yaml for \"%s\" (%s)\n\n", name, lang)
 		fmt.Println("  Replace YOUR_API_KEY with a key from the dashboard:")
-		fmt.Println("  https://rukkiepulse-dashboard.netlify.app\n")
+		fmt.Println("  https://rukkiepulse-dashboard.netlify.app")
+		fmt.Println()
 		printInitSnippet(name, lang)
 		return nil
 	},

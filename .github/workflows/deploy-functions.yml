@@ -18,6 +18,6 @@ jobs:
           version: latest
 
       - name: Deploy heartbeat function
-        run: supabase functions deploy heartbeat --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase functions deploy heartbeat --project-ref xqmjdjjwprnqogokoejz --use-api
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
