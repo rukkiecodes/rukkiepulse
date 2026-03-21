@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	supabaseURL = "https://xqmjdjjwprnqogokoejz.supabase.co"
-	cliSecret   = "rukkie-cli-v1-xqmjdjjwprnqogokoejz"
+	rukkieAPIURL = "https://rukkiepulse-api.vercel.app"
+	cliSecret    = "rukkie-cli-v1-xqmjdjjwprnqogokoejz"
 )
 
 // ServiceStatus holds the cloud status for a registered service.
@@ -30,7 +30,7 @@ type servicesResponse struct {
 
 // FetchServices calls the services-status Edge Function and returns all registered services.
 func FetchServices() ([]ServiceStatus, error) {
-	url := supabaseURL + "/functions/v1/services-status"
+	url := rukkieAPIURL + "/v1/services"
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

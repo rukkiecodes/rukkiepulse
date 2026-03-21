@@ -9,8 +9,11 @@ export interface RukkieConfig {
   serviceName: string
   apiKey: string
   collectorUrl?: string  // default: http://localhost:4317
+  connectUrl?: string    // default: https://rukkiepulse-api.vercel.app/v1/connect
   dependencies?: Record<string, DependencyCheck>
 }
+
+const DEFAULT_CONNECT_URL = 'https://rukkiepulse-api.vercel.app/v1/connect'
 
 /**
  * Initialize the RukkiePulse agent.
@@ -25,14 +28,16 @@ export interface RukkieConfig {
  * const app = express()
  * initRukkie({ serviceName: 'auth-service', apiKey: 'rk_live_xxx' }, app)
  */
-const HEARTBEAT_URL =
-  'https://xqmjdjjwprnqogokoejz.supabase.co/functions/v1/heartbeat'
-
-function pingHeartbeat(apiKey: string): void {
+function pingConnect(config: RukkieConfig): void {
+  const url = config.connectUrl ?? DEFAULT_CONNECT_URL
   // Fire-and-forget — never block startup
-  fetch(HEARTBEAT_URL, {
+  fetch(url, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ serviceName: config.serviceName, language: 'node' }),
   }).catch(() => {/* silent — observability must not crash the service */})
 }
 
@@ -40,8 +45,8 @@ export function initRukkie(config: RukkieConfig, app?: unknown): void {
   // 1. Boot OTel first — must happen before any HTTP handlers are registered
   setupOtel(config)
 
-  // 2. Ping RukkiePulse dashboard so the service shows as connected
-  pingHeartbeat(config.apiKey)
+  // 2. Ping RukkiePulse Connect API — auto-registers + updates heartbeat
+  pingConnect(config)
 
   if (!app) return
 
