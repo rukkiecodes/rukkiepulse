@@ -1,4 +1,3 @@
 [build]
   publish = "out"
-  # Skip Netlify's own CI build — GitHub Actions builds and deploys instead
-  ignore = "exit 1"
+  command = ""

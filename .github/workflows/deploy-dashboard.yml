@@ -29,12 +29,24 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Deploy to Netlify
+      - name: Deploy to Netlify via API
         working-directory: dashboard
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_DASHBOARD_SITE_ID }}
-        run: netlify deploy --prod --dir=out --message="Deploy from GitHub Actions ${{ github.sha }}"
+        run: |
+          zip -r ../deploy.zip out/
+          curl -s -X POST \
+            -H "Content-Type: application/zip" \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            --data-binary @../deploy.zip \
+            "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys" \
+            | tee /tmp/deploy-result.json
+          # Check for error in response
+          if grep -q '"error"' /tmp/deploy-result.json; then
+            echo "Deploy failed:"
+            cat /tmp/deploy-result.json
+            exit 1
+          fi
+          echo "Deploy successful."
+          grep -o '"url":"[^"]*"' /tmp/deploy-result.json | head -1
