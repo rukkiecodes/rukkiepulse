@@ -3,8 +3,6 @@ name: Deploy Dashboard to Netlify
 on:
   push:
     branches: [main]
-    paths:
-      - "dashboard/**"
   workflow_dispatch:
 
 jobs:
@@ -22,7 +20,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: dashboard
-        run: npm install
+        run: npm ci
 
       - name: Build
         working-directory: dashboard
@@ -31,14 +29,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: npm run build
 
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
       - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3
-        with:
-          publish-dir: dashboard/out
-          production-branch: main
-          production-deploy: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Dashboard deploy from ${{ github.sha }}"
+        working-directory: dashboard
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_DASHBOARD_SITE_ID }}
+        run: netlify deploy --prod --dir=out --message="Deploy from GitHub Actions ${{ github.sha }}"
