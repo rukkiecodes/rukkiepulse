@@ -17,6 +17,7 @@ function ServiceDetail() {
   const [showNewKeyForm, setShowNewKeyForm] = useState(false);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [importStyle, setImportStyle] = useState<"esm" | "cjs">("esm");
 
   useEffect(() => {
     if (!id) { router.replace("/dashboard"); return; }
@@ -82,12 +83,28 @@ function ServiceDetail() {
   const activeKeys = keys.filter((k) => !k.revoked_at);
   const revokedKeys = keys.filter((k) => k.revoked_at);
 
-  const snippet: Record<string, string> = {
-    node: `import { initRukkie } from 'rukkie-agent'\n\ninitRukkie({\n  serviceName: '${service.name}',\n  apiKey: 'YOUR_API_KEY',\n})`,
-    python: `from rukkie_agent import init_rukkie\n\ninit_rukkie(\n    service_name="${service.name}",\n    api_key="YOUR_API_KEY",\n)`,
-    go: `// Go agent coming soon — use the REST API directly`,
-    other: `// POST /api/v1/heartbeat\n// Authorization: Bearer YOUR_API_KEY`,
+  const snippets: Record<string, { esm: string; cjs?: string }> = {
+    node: {
+      esm: `import { initRukkie } from 'rukkie-agent'\n\ninitRukkie({\n  serviceName: '${service.name}',\n  apiKey: 'YOUR_API_KEY',\n})`,
+      cjs: `const { initRukkie } = require('rukkie-agent')\n\ninitRukkie({\n  serviceName: '${service.name}',\n  apiKey: 'YOUR_API_KEY',\n})`,
+    },
+    python: {
+      esm: `from rukkie_agent import init_rukkie\n\ninit_rukkie(\n    service_name="${service.name}",\n    api_key="YOUR_API_KEY",\n)`,
+    },
+    go: {
+      esm: `// Go agent coming soon — use the REST API directly`,
+    },
+    other: {
+      esm: `// POST /api/v1/heartbeat\n// Authorization: Bearer YOUR_API_KEY`,
+    },
   };
+
+  const lang = service.language ?? "other";
+  const currentSnippets = snippets[lang] ?? snippets.other;
+  const activeSnippet = (importStyle === "cjs" && currentSnippets.cjs)
+    ? currentSnippets.cjs
+    : currentSnippets.esm;
+  const showImportToggle = !!currentSnippets.cjs;
 
   return (
     <div className="page">
@@ -210,8 +227,36 @@ function ServiceDetail() {
 
       {/* Code snippet */}
       <div className="card" style={{ marginBottom: "24px" }}>
-        <h2 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "12px" }}>Integration Snippet</h2>
-        <pre className="snippet">{snippet[service.language ?? "other"] ?? snippet.other}</pre>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+          <h2 style={{ fontSize: "14px", fontWeight: 600 }}>Integration Snippet</h2>
+          {showImportToggle && (
+            <div style={{ display: "flex", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "6px", overflow: "hidden" }}>
+              <button
+                onClick={() => setImportStyle("esm")}
+                style={{
+                  padding: "4px 12px", fontSize: "12px", fontWeight: 600, border: "none", cursor: "pointer",
+                  background: importStyle === "esm" ? "var(--green)" : "transparent",
+                  color: importStyle === "esm" ? "var(--bg)" : "var(--muted)",
+                  fontFamily: "var(--font)",
+                }}
+              >
+                ESM
+              </button>
+              <button
+                onClick={() => setImportStyle("cjs")}
+                style={{
+                  padding: "4px 12px", fontSize: "12px", fontWeight: 600, border: "none", cursor: "pointer",
+                  background: importStyle === "cjs" ? "var(--green)" : "transparent",
+                  color: importStyle === "cjs" ? "var(--bg)" : "var(--muted)",
+                  fontFamily: "var(--font)",
+                }}
+              >
+                CommonJS
+              </button>
+            </div>
+          )}
+        </div>
+        <pre className="snippet">{activeSnippet}</pre>
         <p style={{ color: "var(--muted)", fontSize: "12px", marginTop: "10px" }}>
           Replace <code style={{ color: "var(--orange)" }}>YOUR_API_KEY</code> with an active key above.
         </p>
