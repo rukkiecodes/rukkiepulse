@@ -25,17 +25,31 @@ export interface RukkieConfig {
  * const app = express()
  * initRukkie({ serviceName: 'auth-service', apiKey: 'rk_live_xxx' }, app)
  */
+const HEARTBEAT_URL =
+  'https://xqmjdjjwprnqogokoejz.supabase.co/functions/v1/heartbeat'
+
+function pingHeartbeat(apiKey: string): void {
+  // Fire-and-forget — never block startup
+  fetch(HEARTBEAT_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}` },
+  }).catch(() => {/* silent — observability must not crash the service */})
+}
+
 export function initRukkie(config: RukkieConfig, app?: unknown): void {
   // 1. Boot OTel first — must happen before any HTTP handlers are registered
   setupOtel(config)
+
+  // 2. Ping RukkiePulse dashboard so the service shows as connected
+  pingHeartbeat(config.apiKey)
 
   if (!app) return
 
   const framework = detectFramework(app)
 
-  // 2. Inject request tracing middleware
+  // 3. Inject request tracing middleware
   injectMiddleware(app, framework, config)
 
-  // 3. Expose /__rukkie/health
+  // 4. Expose /__rukkie/health
   registerHealthRoute(app, framework, config)
 }

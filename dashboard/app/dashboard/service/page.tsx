@@ -4,6 +4,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase, type Service, type ApiKey } from "@/lib/supabase";
 import { generateApiKey } from "@/lib/apikeys";
 
+function connectionStatus(lastUsedAt: string | null) {
+  if (!lastUsedAt) return { dot: "⚫", label: "Never connected", cls: "badge-gray", title: "No heartbeat received yet" };
+  const ago = Date.now() - new Date(lastUsedAt).getTime();
+  const mins = ago / 60_000;
+  if (mins < 5)  return { dot: "🟢", label: "Live", cls: "badge-green", title: `Last seen ${Math.round(mins)}m ago` };
+  if (mins < 60) return { dot: "🟡", label: "Recent", cls: "badge-orange", title: `Last seen ${Math.round(mins)}m ago` };
+  return { dot: "🔴", label: "Inactive", cls: "badge-red", title: `Last seen ${new Date(lastUsedAt).toLocaleString()}` };
+}
+
 function ServiceDetail() {
   const router = useRouter();
   const params = useSearchParams();
@@ -22,6 +31,9 @@ function ServiceDetail() {
   useEffect(() => {
     if (!id) { router.replace("/dashboard"); return; }
     loadData();
+    // Auto-refresh every 30 s so connection status stays current
+    const t = setInterval(loadData, 30_000);
+    return () => clearInterval(t);
   }, [id]);
 
   async function loadData() {
@@ -192,23 +204,27 @@ function ServiceDetail() {
               <tr>
                 <th>Label</th>
                 <th>Key (prefix)</th>
-                <th>Created</th>
-                <th>Last used</th>
+                <th>Status</th>
+                <th>Last seen</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {activeKeys.map((key) => (
+              {activeKeys.map((key) => {
+                const status = connectionStatus(key.last_used_at);
+                return (
                 <tr key={key.id}>
                   <td style={{ fontWeight: 600 }}>{key.label}</td>
                   <td style={{ fontFamily: "monospace", color: "var(--green)", fontSize: "13px" }}>
                     {key.key_prefix}…
                   </td>
-                  <td style={{ color: "var(--muted)", fontSize: "12px" }}>
-                    {new Date(key.created_at).toLocaleDateString()}
+                  <td>
+                    <span className={`badge ${status.cls}`} title={status.title}>
+                      {status.dot} {status.label}
+                    </span>
                   </td>
                   <td style={{ color: "var(--muted)", fontSize: "12px" }}>
-                    {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : "Never"}
+                    {key.last_used_at ? new Date(key.last_used_at).toLocaleString() : "Never"}
                   </td>
                   <td style={{ textAlign: "right" }}>
                     <button className="btn btn-ghost" style={{ fontSize: "12px", marginRight: "6px" }} onClick={() => revokeKey(key.id)}>
@@ -219,7 +235,8 @@ function ServiceDetail() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}

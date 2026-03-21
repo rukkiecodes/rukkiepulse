@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -185,16 +187,56 @@ func (m ShellModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(cmds...)
 
 			case stateReady:
-				lower := strings.ToLower(raw)
+				lower := strings.ToLower(strings.TrimSpace(raw))
+				parts := strings.Fields(raw)
+				cmd0 := ""
+				if len(parts) > 0 {
+					cmd0 = strings.ToLower(parts[0])
+				}
+
+				// ── built-in: exit ───────────────────────────────────
 				if lower == "exit" || lower == "quit" {
 					return m, tea.Quit
 				}
-				if lower == "clear" {
+
+				// ── built-in: clear ──────────────────────────────────
+				if lower == "clear" || lower == "cls" {
 					m.lines = []string{}
 					m.vp.SetContent("")
 					return m, nil
 				}
-				if lower == "login" {
+
+				// ── built-in: pwd ────────────────────────────────────
+				if lower == "pwd" {
+					m.appendLine(renderPromptLine(m.cwd) + " " + colorizeInput(raw))
+					m.appendLine("  " + lipgloss.NewStyle().Foreground(shellWhite).Background(shellBg).Render(m.cwd))
+					m.appendLine("")
+					m.vp.SetContent(strings.Join(m.lines, "\n"))
+					m.vp.GotoBottom()
+					return m, nil
+				}
+
+				// ── built-in: cd ─────────────────────────────────────
+				if cmd0 == "cd" {
+					m.appendLine(renderPromptLine(m.cwd) + " " + colorizeInput(raw))
+					target := ""
+					if len(parts) > 1 {
+						target = strings.Join(parts[1:], " ")
+					}
+					newCwd, err := resolveCd(m.cwd, target)
+					if err != nil {
+						m.appendLine("  " + lipgloss.NewStyle().Foreground(shellRed).Background(shellBg).Render("cd: "+err.Error()))
+					} else {
+						m.cwd = newCwd
+					}
+					m.appendLine("")
+					m.vp.SetContent(strings.Join(m.lines, "\n"))
+					m.vp.GotoBottom()
+					return m, nil
+				}
+
+				// ── built-in: login ──────────────────────────────────
+				if cmd0 == "login" {
 					m.appendLine(colorizeInput(raw))
 					m.appendLine(lipgloss.NewStyle().Foreground(shellBlue).Bold(true).Render("  Password: "))
 					m.state = statePassword
@@ -207,12 +249,22 @@ func (m ShellModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				m.appendLine(renderPromptLine(m.cwd) + " " + colorizeInput(raw))
 				m.state = stateRunning
-				parts := strings.Fields(raw)
+				cwd := m.cwd
 				exe := m.exe
-				cmds = append(cmds, func() tea.Msg {
-					out, err := runRukkie(exe, parts...)
-					return cmdOutputMsg{input: raw, output: out, isErr: err != nil}
-				})
+
+				if isRukkieCmd(cmd0) {
+					// ── rukkie commands ──────────────────────────────
+					cmds = append(cmds, func() tea.Msg {
+						out, err := runRukkieInDir(exe, cwd, parts...)
+						return cmdOutputMsg{input: raw, output: out, isErr: err != nil}
+					})
+				} else {
+					// ── system / shell passthrough ───────────────────
+					cmds = append(cmds, func() tea.Msg {
+						out, err := runSystem(cwd, raw)
+						return cmdOutputMsg{input: raw, output: out, isErr: err != nil}
+					})
+				}
 				cmds = append(cmds, m.spinner.Tick)
 				return m, tea.Batch(cmds...)
 			}
@@ -372,7 +424,8 @@ func renderPromptLine(cwd string) string {
 
 func renderWelcome() string {
 	lines := []string{
-		lipgloss.NewStyle().Foreground(shellGray).Background(shellBg).Render("  Type a command to get started. Try: scan  status  inspect  trace  help"),
+		lipgloss.NewStyle().Foreground(shellGray).Background(shellBg).Render("  Type a command to get started. Try: scan  status  inspect  trace  init  help"),
+		lipgloss.NewStyle().Foreground(shellGray).Background(shellBg).Render("  Navigate with: cd  ls  pwd  mkdir  cat  git  npm  node  python"),
 		lipgloss.NewStyle().Foreground(shellGray).Background(shellBg).Render("  Type exit to quit."),
 	}
 	return strings.Join(lines, "\n")
@@ -384,9 +437,17 @@ func colorizeInput(raw string) string {
 		return raw
 	}
 	known := map[string]bool{
+		// rukkie commands
 		"scan": true, "status": true, "inspect": true,
 		"trace": true, "watch": true, "login": true,
-		"logout": true, "help": true, "clear": true, "exit": true,
+		"logout": true, "help": true, "init": true,
+		// navigation / shell built-ins
+		"cd": true, "ls": true, "dir": true, "pwd": true,
+		"mkdir": true, "cat": true, "clear": true, "cls": true,
+		"exit": true, "quit": true,
+		// common system commands shown in green
+		"git": true, "npm": true, "node": true, "python": true,
+		"python3": true, "go": true, "code": true,
 	}
 
 	var out []string
@@ -403,6 +464,71 @@ func colorizeInput(raw string) string {
 		}
 	}
 	return strings.Join(out, " ")
+}
+
+// isRukkieCmd returns true for commands handled by the rukkie binary.
+func isRukkieCmd(cmd string) bool {
+	switch cmd {
+	case "scan", "status", "inspect", "trace", "watch",
+		"logout", "help", "init", "rukkie":
+		return true
+	}
+	return false
+}
+
+// resolveCd resolves a cd target relative to cwd and returns the new path.
+func resolveCd(cwd, target string) (string, error) {
+	if target == "" || target == "~" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		return home, nil
+	}
+	if target == "-" {
+		return cwd, nil // can't track OLDPWD without extra state; stay put
+	}
+	var newPath string
+	if filepath.IsAbs(target) {
+		newPath = filepath.Clean(target)
+	} else {
+		newPath = filepath.Clean(filepath.Join(cwd, target))
+	}
+	info, err := os.Stat(newPath)
+	if err != nil {
+		return "", fmt.Errorf("no such directory: %s", target)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("not a directory: %s", target)
+	}
+	return newPath, nil
+}
+
+// runRukkieInDir runs a rukkie sub-command with the working directory set.
+func runRukkieInDir(exe, cwd string, args ...string) (string, error) {
+	cmd := exec.Command(exe, args...)
+	cmd.Dir = cwd
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	err := cmd.Run()
+	return buf.String(), err
+}
+
+// runSystem runs an arbitrary shell command with the given working directory.
+func runSystem(cwd, raw string) (string, error) {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/C", raw)
+	} else {
+		cmd = exec.Command("sh", "-c", raw)
+	}
+	cmd.Dir = cwd
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	err := cmd.Run()
+	return buf.String(), err
 }
 
 func runRukkie(exe string, args ...string) (string, error) {
@@ -437,8 +563,17 @@ func renderHelp() string {
 		{"inspect <service>", "Deep dive into one service"},
 		{"trace <service>", "Show distributed traces from Jaeger"},
 		{"watch", "Live-updating dashboard"},
+		{"init", "Create rukkie.yaml and print integration snippet"},
 		{"login", "Authenticate"},
 		{"logout", "Clear session"},
+		{"", ""},
+		{"cd <dir>", "Change working directory"},
+		{"ls  /  dir", "List files in current directory"},
+		{"pwd", "Print current directory"},
+		{"mkdir <dir>", "Create a directory"},
+		{"cat <file>", "Print file contents"},
+		{"git / npm / node / python", "Run system commands directly"},
+		{"", ""},
 		{"clear", "Clear screen"},
 		{"exit", "Quit"},
 	}

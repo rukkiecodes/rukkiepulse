@@ -48,6 +48,7 @@
       <a href="#cmd-trace" class="sidebar-link"><span class="cmd">trace</span></a>
       <a href="#cmd-watch" class="sidebar-link"><span class="cmd">watch</span></a>
       <a href="#cmd-logout" class="sidebar-link"><span class="cmd">logout</span></a>
+      <a href="#cmd-init" class="sidebar-link"><span class="cmd">init</span></a>
     </div>
 
     <div class="sidebar-section">
@@ -340,52 +341,91 @@ rukkie watch <span class="flag">--env</span> production <span class="flag">--int
       </section>
 
       <!-- AGENTS -->
+      <!-- RUKKIE INIT -->
+      <section id="cmd-init">
+        <h2><span class="cmd">rukkie init</span></h2>
+        <p class="section-desc">Run inside any backend project to create <code>rukkie.yaml</code> and print the integration snippet for that language.</p>
+        <pre><span class="t-prompt">$</span> <span class="t-cmd">cd my-backend-project</span>
+<span class="t-prompt">$</span> <span class="t-cmd">rukkie init</span>
+
+  ✅  Created rukkie.yaml for "my-backend-project" (node)
+
+  Replace YOUR_API_KEY with a key from the dashboard:
+  https://rukkiepulse-dashboard.netlify.app
+
+  ── ESM ────────────────────────────────────────────────
+  import { initRukkie } from 'rukkie-agent'
+
+  initRukkie({
+    serviceName: 'my-backend-project',
+    apiKey: 'YOUR_API_KEY',
+  })
+
+  ── CommonJS ───────────────────────────────────────────
+  const { initRukkie } = require('rukkie-agent')
+
+  initRukkie({
+    serviceName: 'my-backend-project',
+    apiKey: 'YOUR_API_KEY',
+  })
+
+  Install:  npm install rukkie-agent</pre>
+        <p>Auto-detects <strong>Node.js</strong> (<code>package.json</code>), <strong>Python</strong> (<code>pyproject.toml</code> / <code>requirements.txt</code>), and <strong>Go</strong> (<code>go.mod</code>).</p>
+        <p>The generated <code>rukkie.yaml</code>:</p>
+        <pre><span class="key">service</span>:
+  <span class="key">name</span>: <span class="val">my-backend-project</span>
+  <span class="key">language</span>: <span class="val">node</span>
+  <span class="key">apiKey</span>: <span class="val">YOUR_API_KEY</span>
+<span class="key">observability</span>:
+  <span class="key">jaeger</span>:
+    <span class="key">url</span>: <span class="val">http://localhost:16686</span>
+  <span class="key">collector</span>: <span class="val">http://localhost:4317</span></pre>
+      </section>
+
       <section id="agents">
         <h2>Agent SDKs</h2>
-        <p class="section-desc">Drop one line into your service. The agent auto-instruments requests, exposes <code>/__rukkie/health</code>, and pushes traces to Jaeger.</p>
+        <p class="section-desc">Drop one line into your service. The agent auto-instruments requests, exposes <code>/__rukkie/health</code>, pushes traces to Jaeger, and pings the dashboard so you can see it as <strong>Live</strong>.</p>
+
+        <div style="margin: 20px 0; padding: 16px 20px; background: #0d1f12; border: 1px solid #1a3a22; border-radius: 8px; font-size: 13px;">
+          <strong style="color: #39d353;">Connection status</strong> — once your API key is active in a service, the
+          <a href="https://rukkiepulse-dashboard.netlify.app" target="_blank">dashboard</a> shows
+          <span style="color:#39d353;">🟢 Live</span> (seen &lt;5 min ago),
+          <span style="color:#f7a541;">🟡 Recent</span> (&lt;1 h), or
+          <span style="color:#f85149;">🔴 Inactive</span> (last seen &gt;1 h).
+          No config needed — the agent sends a heartbeat automatically on startup.
+        </div>
 
         <div id="agent-node">
           <h3>Node.js</h3>
           <pre>npm install rukkie-agent</pre>
-          <pre><span class="comment">// Express</span>
-import express from 'express'
+          <pre><span class="comment">// ESM (recommended)</span>
 import { initRukkie } from 'rukkie-agent'
-
-const app = express()
 
 initRukkie({
   serviceName: <span class="val">'auth-service'</span>,
   apiKey: <span class="val">'rk_live_xxx'</span>,
-  dependencies: {
-    db: async () => checkDbConnection(),
-    redis: async () => checkRedisConnection(),
-  }
-}, app)
+})
 
-<span class="comment">// Works with Fastify too — same API</span></pre>
-          <p>Auto-detects <strong>Express</strong> and <strong>Fastify</strong>. Instruments all HTTP requests and exposes <code>GET /__rukkie/health</code> automatically.</p>
+<span class="comment">// CommonJS</span>
+const { initRukkie } = require('rukkie-agent')
+
+initRukkie({
+  serviceName: <span class="val">'auth-service'</span>,
+  apiKey: <span class="val">'rk_live_xxx'</span>,
+})</pre>
+          <p>Auto-detects <strong>Express</strong> and <strong>Fastify</strong>. Pass <code>app</code> as the second argument to enable middleware and <code>GET /__rukkie/health</code>.</p>
         </div>
 
         <div id="agent-python">
           <h3>Python</h3>
           <pre>pip install rukkie-agent</pre>
-          <pre><span class="comment"># FastAPI</span>
-from fastapi import FastAPI
+          <pre><span class="comment"># FastAPI / Flask</span>
 from rukkie_agent import init_rukkie
-
-app = FastAPI()
 
 init_rukkie(
     service_name=<span class="val">"auth-service"</span>,
     api_key=<span class="val">"rk_live_xxx"</span>,
-    app=app,
-    dependencies={
-        "db": check_db_connection,
-        "redis": check_redis_connection,
-    }
-)
-
-<span class="comment"># Works with Flask too — same API</span></pre>
+)</pre>
           <p>Auto-detects <strong>FastAPI</strong> and <strong>Flask</strong>. Same capabilities as the Node.js agent.</p>
         </div>
       </section>

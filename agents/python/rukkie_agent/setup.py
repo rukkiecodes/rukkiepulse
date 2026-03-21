@@ -1,3 +1,5 @@
+import threading
+import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional
 
@@ -5,6 +7,23 @@ from .otel import setup_otel
 from .detect import detect_framework
 from .middleware import inject_middleware
 from .health import register_health_endpoint
+
+_HEARTBEAT_URL = "https://xqmjdjjwprnqogokoejz.supabase.co/functions/v1/heartbeat"
+
+
+def _ping_heartbeat(api_key: str) -> None:
+    """Fire-and-forget heartbeat — never blocks startup."""
+    def _send():
+        try:
+            req = urllib.request.Request(
+                _HEARTBEAT_URL,
+                method="POST",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass  # silent — observability must not crash the service
+    threading.Thread(target=_send, daemon=True).start()
 
 
 @dataclass
@@ -53,6 +72,9 @@ def init_rukkie(
 
     # 1. Boot OTel SDK first
     setup_otel(config)
+
+    # 2. Ping RukkiePulse dashboard so the service shows as connected
+    _ping_heartbeat(api_key)
 
     if app is None:
         return
