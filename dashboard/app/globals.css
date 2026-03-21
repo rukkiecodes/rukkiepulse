@@ -1,0 +1,119 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:   #39d353;
+  --orange:  #f7a541;
+  --red:     #f85149;
+  --bg:      #050f09;
+  --surface: #0d1f12;
+  --border:  #1a3a22;
+  --muted:   #8b949e;
+  --text:    #e6edf3;
+  --radius:  8px;
+  --font:    'JetBrains Mono', 'Fira Code', monospace;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+
+a { color: var(--green); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button, .btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--radius);
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: opacity 0.15s;
+}
+button:hover, .btn:hover { opacity: 0.85; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary   { background: var(--green);  color: var(--bg); }
+.btn-danger    { background: var(--red);    color: #fff; }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-ghost     { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+input, select, textarea {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: var(--font); font-size: 14px;
+  padding: 10px 14px; width: 100%;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--green);
+}
+
+label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+}
+
+.error-msg { color: var(--red); font-size: 13px; margin-top: 8px; }
+
+/* nav */
+.nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.nav-logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+.nav-logo span { color: var(--orange); }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+
+/* page shell */
+.page { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.page-title { font-size: 22px; font-weight: 700; }
+
+/* table */
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+.table th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.table tr:last-child td { border-bottom: none; }
+.table tbody tr:hover td { background: #0d2b18; }
+
+/* badge */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+.badge-green  { background: #0d2b18; color: var(--green); }
+.badge-orange { background: #2b1e0d; color: var(--orange); }
+.badge-red    { background: #2b0d0d; color: var(--red); }
+.badge-gray   { background: #1a1a1a; color: var(--muted); }
+
+/* key display */
+.key-display {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg); border: 1px solid var(--green);
+  border-radius: var(--radius); padding: 12px 16px;
+  font-size: 13px; word-break: break-all;
+}
+
+/* form */
+.form-field { margin-bottom: 18px; }
+.form-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+/* empty state */
+.empty { text-align: center; padding: 60px 24px; color: var(--muted); }
+.empty h3 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
+
+/* modal overlay */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 28px; width: 100%; max-width: 480px;
+}
+.modal h2 { font-size: 18px; margin-bottom: 18px; }
+
+/* code snippet */
+.snippet {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  font-size: 12px; overflow-x: auto; white-space: pre;
+  color: var(--green); margin-top: 8px;
+}

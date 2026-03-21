@@ -19,6 +19,9 @@
     <a href="#quick-start">Docs</a>
     <a href="#agents">Agents</a>
     <a href="https://github.com/rukkiecodes/rukkiepulse" target="_blank">GitHub</a>
+    <a href="https://rukkiepulse-dashboard.netlify.app" class="btn btn-outline" target="_blank">
+      ⚡ Dashboard
+    </a>
     <a href="https://github.com/rukkiecodes/rukkiepulse/releases/latest" class="btn btn-primary" target="_blank">
       ↓ Download
     </a>
@@ -57,6 +60,12 @@
       <div class="sidebar-label">Infrastructure</div>
       <a href="#jaeger" class="sidebar-link">Jaeger Setup</a>
     </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Dashboard</div>
+      <a href="#api-keys" class="sidebar-link">API Keys</a>
+      <a href="https://rukkiepulse-dashboard.netlify.app" class="sidebar-link" target="_blank">⚡ Open Dashboard ↗</a>
+    </div>
   </aside>
 
   <!-- PAGE BODY -->
@@ -70,6 +79,7 @@
       <div class="hero-actions">
         <a href="https://github.com/rukkiecodes/rukkiepulse/releases/latest" class="btn btn-primary" target="_blank">↓ Download for Windows</a>
         <a href="#quick-start" class="btn btn-outline">Quick Start →</a>
+        <a href="https://rukkiepulse-dashboard.netlify.app" class="btn btn-outline" target="_blank">⚡ Open Dashboard</a>
       </div>
 
       <div class="hero-terminal">
@@ -403,6 +413,51 @@ init_rukkie(
     <span class="key">url</span>: <span class="val">http://localhost:16686</span></pre>
 
         <p>Set <code>collectorUrl</code> in your agents to <code>http://localhost:4317</code> (this is already the default).</p>
+      </section>
+
+      <!-- API KEYS -->
+      <section id="api-keys">
+        <h2>API Keys &amp; Service Registration</h2>
+        <p>
+          Each backend service you monitor needs an <strong>API key</strong> so RukkiePulse can identify it.
+          Keys are generated in the dashboard — they are shown only once, then stored as a secure hash.
+        </p>
+
+        <div style="margin: 20px 0; padding: 20px; background: #0d1f12; border: 1px solid #1a3a22; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: gap;">
+          <div>
+            <strong style="color: #39d353;">RukkiePulse Dashboard</strong>
+            <p style="margin: 4px 0 0; color: #8b949e; font-size: 13px;">Register services, generate &amp; revoke API keys, view all connected backends.</p>
+          </div>
+          <a href="https://rukkiepulse-dashboard.netlify.app" class="btn btn-primary" target="_blank" style="flex-shrink: 0; margin-left: 20px;">
+            ⚡ Open Dashboard →
+          </a>
+        </div>
+
+        <h3>Steps</h3>
+        <ol>
+          <li>Open the dashboard and sign in.</li>
+          <li>Click <strong>+ New Service</strong> and fill in the service name and language.</li>
+          <li>On the service page click <strong>+ Generate API Key</strong> — copy the key immediately, it won't be shown again.</li>
+          <li>Add the key to your service using the agent SDK:</li>
+        </ol>
+
+        <p><strong>Node.js</strong></p>
+        <pre><span class="kw">import</span> { initRukkie } <span class="kw">from</span> <span class="str">'rukkie-agent'</span>
+
+initRukkie({
+  serviceName: <span class="str">'auth-service'</span>,
+  apiKey: <span class="str">'rk_live_…'</span>,
+})</pre>
+
+        <p><strong>Python</strong></p>
+        <pre><span class="kw">from</span> rukkie_agent <span class="kw">import</span> init_rukkie
+
+init_rukkie(
+    service_name=<span class="str">"auth-service"</span>,
+    api_key=<span class="str">"rk_live_…"</span>,
+)</pre>
+
+        <p>To rotate a key: go to the service page → click <strong>Revoke</strong> on the old key → click <strong>+ Generate API Key</strong> for a new one.</p>
       </section>
 
     </main>
