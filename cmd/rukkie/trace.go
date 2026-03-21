@@ -80,7 +80,7 @@ func runTrace(cmd *cobra.Command, args []string) error {
 		if operation != "" {
 			fmt.Printf(" / %q", operation)
 		}
-		fmt.Println("\n")
+		fmt.Println()
 		return nil
 	}
 
